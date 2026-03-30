@@ -1,6 +1,5 @@
 /*
     TODO
-        - app glance
         - red background for pause should be pause shape
         - better icons
         - hide seconds when backlight off (not when <2mins remaining)
@@ -118,6 +117,31 @@ State_t s_state = {
 };
 
 static bool s_initialising = true;
+
+
+/// Format `seconds` into a `buffer` of `size` as hours, minutes, seconds
+static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate) {
+    const char* neg = seconds < 0 ? "-" : "";
+    const int abs_seconds = ABS(seconds);
+    const int h = abs_seconds / SECONDS_PER_HOUR ;
+    const int m = (abs_seconds % SECONDS_PER_HOUR ) / SECONDS_PER_MINUTE;
+    const int s = abs_seconds % SECONDS_PER_MINUTE;
+    if (h || !truncate) {
+        snprintf(buffer, size, "%s%dh%02dm%02ds", neg, h, m, s);
+    } else if (m) {
+        snprintf(buffer, size, "%s%dm%02ds", neg, m, s);
+    } else {
+        snprintf(buffer, size, "%s%ds", neg, s);
+    }
+}
+
+// format a time_t into a string
+static void snprintf_time(char* target, size_t size, const char* fmt, time_t time) {
+    char time_str[MAX_TEXT_SIZE] = {0};
+    const char* time_fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M%P";
+    strftime(time_str, sizeof(time_str), time_fmt, localtime(&time));
+    snprintf(target, size, fmt, time_str);
+}
 
 
 /******************************************************************************
@@ -387,22 +411,6 @@ static void alarm_reset(void) {
  UI updates
 ******************************************************************************/
 
-/// Format `seconds` into a `buffer` of `size` as hours, minutes, seconds
-static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate) {
-    const char* neg = seconds < 0 ? "-" : "";
-    const int abs_seconds = ABS(seconds);
-    const int h = abs_seconds / SECONDS_PER_HOUR ;
-    const int m = (abs_seconds % SECONDS_PER_HOUR ) / SECONDS_PER_MINUTE;
-    const int s = abs_seconds % SECONDS_PER_MINUTE;
-    if (h || !truncate) {
-        snprintf(buffer, size, "%s%dh%02dm%02ds", neg, h, m, s);
-    } else if (m) {
-        snprintf(buffer, size, "%s%dm%02ds", neg, m, s);
-    } else {
-        snprintf(buffer, size, "%s%ds", neg, s);
-    }
-}
-
 static void update_action_bar(void) {
     TRACE("update_action_bar");
     const GBitmap* icon_toggle = s_state.is_counting ? s_icon_pause : s_icon_start;
@@ -513,6 +521,41 @@ static void update_elapsed(void) {
 /******************************************************************************
  Handlers
 ******************************************************************************/
+
+
+void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void *context) {
+    char subtitle[150] = {0};
+    AppGlanceSlice slice = {
+        .expiration_time = APP_GLANCE_SLICE_NO_EXPIRATION,
+        .layout.icon = APP_GLANCE_SLICE_DEFAULT_ICON, // TODO "publishedResource"
+        .layout.subtitle_template_string = subtitle,
+    };
+
+    #define ADD_SLICE() \
+        MACRO_START \
+            AppGlanceResult result = app_glance_add_slice(session, slice); \
+            ASSERT(result == APP_GLANCE_RESULT_SUCCESS); \
+            LOG("appglanceresult = %d", result);  \
+        MACRO_END
+
+    if (s_state.is_counting) {
+        if (s_state.alarm_duration > 0) {
+            const time_t alarm_time = s_state.start_time + s_state.alarm_duration;
+            snprintf_time(subtitle, sizeof(subtitle), "Alarm expired at %s", alarm_time);
+            ADD_SLICE();
+            if (s_state.elapsed_time < s_state.alarm_duration) {
+                snprintf_time(subtitle, sizeof(subtitle), "Alarm set for %s", alarm_time);
+                slice.expiration_time = alarm_time;
+                ADD_SLICE();
+            }
+        } else {
+            snprintf_time(subtitle, sizeof(subtitle), "Timer running since %s", s_state.start_time);
+            ADD_SLICE();
+        }
+    }
+
+    #undef ADD_SLICE
+}
 
 // clear the entire app back to nothing
 static void do_clear(void){
@@ -822,6 +865,8 @@ static void main_window_load(Window *window) {
 static void main_window_unload(Window *window) {
     TRACE("main_window_unload");
 
+    app_glance_reload(glance_reload_callback, NULL);
+
     // background
     layer_destroy(s_bg_layer);
 
@@ -840,7 +885,7 @@ static void main_window_unload(Window *window) {
     text_layer_destroy(s_text_layer_alarm_time);
     text_layer_destroy(s_text_layer_primary);
     text_layer_destroy(s_text_layer_secondary);
-    if (s_edit_indicator_animation != NULL){
+    if (s_edit_indicator_animation != NULL) {
         animation_unschedule(property_animation_get_animation(s_edit_indicator_animation));
         property_animation_destroy(s_edit_indicator_animation);
     }
