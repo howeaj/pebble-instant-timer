@@ -1,6 +1,6 @@
 /*
     TODO
-        - red background for pause should be pause shape
+        - app icon
         - better icons
         - hide seconds when backlight off (not when <2mins remaining)
             light_enable_interaction() or prv_change_state(LIGHT_STATE_ON_TIMED)
@@ -522,7 +522,6 @@ static void update_elapsed(void) {
  Handlers
 ******************************************************************************/
 
-
 void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void *context) {
     char subtitle[150] = {0};
     AppGlanceSlice slice = {
@@ -680,7 +679,7 @@ static void click_config_provider(void *context) {
 #define BG_COLOR_PAUSED GColorBulgarianRose
 
 static void render_background(Layer *layer, GContext *ctx) {
-    GRect frame = layer_get_frame(layer);
+    const GRect frame = layer_get_frame(layer);
     const GPoint centre = grect_center_point(&frame);
     const int central_panel_radius = 100;
 
@@ -694,15 +693,25 @@ static void render_background(Layer *layer, GContext *ctx) {
     if (s_state.alarm_duration) {
         graphics_context_set_fill_color(ctx, is_overtime ? OVERTIME_COLOR : ELAPSED_COLOR);
         graphics_fill_radial(ctx, frame, GOvalScaleModeFillCircle,
-            (frame.size.h / 2) - central_panel_radius + 1,
+            (centre.x / 2) - central_panel_radius + 1,
             DEG_TO_TRIGANGLE(0),
             (TRIG_MAX_ANGLE * s_state.elapsed_time / s_state.alarm_duration) % (TRIG_MAX_ANGLE + 1)
         );
     }
 
     // central panel
-    graphics_context_set_fill_color(ctx, s_state.is_counting ? BG_COLOR : BG_COLOR_PAUSED);
+    graphics_context_set_fill_color(ctx, BG_COLOR);
     graphics_fill_circle(ctx, centre, central_panel_radius);
+
+    // pause symbol
+    if (!s_state.is_counting) {
+        const GSize pause_size = {central_panel_radius / 2.5, central_panel_radius * 1.5};
+        graphics_context_set_fill_color(ctx, BG_COLOR_PAUSED);
+        GPoint pause_origin = {centre.x - (pause_size.w * 1.5), centre.y - (pause_size.h / 2)};
+        graphics_fill_rect(ctx, (GRect){.origin=pause_origin, .size=pause_size}, 2, GCornersAll);
+        pause_origin.x += pause_size.w * 2;
+        graphics_fill_rect(ctx, (GRect){.origin=pause_origin, .size=pause_size}, 2, GCornersAll);
+    }
 }
 
 static void create_alarm_icon(Layer* parent) {
