@@ -1,6 +1,7 @@
 /*
     TODO
-        - support other pebbles
+        - reduce action bar icon size on chalk
+        - repeat alarm on each time round
         - hide seconds when backlight off (not when <2mins remaining)
             light_enable_interaction() or prv_change_state(LIGHT_STATE_ON_TIMED)
             DEFAULT_BACKLIGHT_TIMEOUT_MS
@@ -24,15 +25,7 @@
                     myimage.pbl.png
         - touchscreen control
 
-    "targetPlatforms": [
-      "aplite",
-      "basalt",
-      "chalk",
-      "diorite",
-      "emery",
-      "flint",
-      "gabbro"
-    ],
+
 */
 
 #include <pebble.h>
@@ -148,6 +141,25 @@ static void snprintf_time(char* target, size_t size, const char* fmt, time_t tim
     const char* time_fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M%P";
     strftime(time_str, sizeof(time_str), time_fmt, localtime(&time));
     snprintf(target, size, fmt, time_str);
+}
+
+// Given a GRect that is the entire root window frame,
+// return a GRect shrunk for the status and action bars.
+GRect reduce_frame_for_system_bars(const GRect frame) {
+#if PBL_ROUND
+    return frame;
+#else  // PBL_RECT
+    return (GRect) {
+        .origin = {
+            .x = frame.origin.x,
+            .y = frame.origin.y + STATUS_BAR_LAYER_HEIGHT
+        },
+        .size = {
+            .w = frame.size.w - ACTION_BAR_WIDTH,
+            .h = frame.size.h - STATUS_BAR_LAYER_HEIGHT
+        }
+    };
+#endif  // PBL_RECT
 }
 
 
@@ -542,7 +554,7 @@ static void vibe_for_start_stop(void) {
 /******************************************************************************
  Handlers
 ******************************************************************************/
-
+#if !PBL_PLATFORM_APLITE
 void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void *context) {
     char subtitle[150] = {0};
     AppGlanceSlice slice = {
@@ -575,6 +587,7 @@ void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void 
 
     #undef ADD_SLICE
 }
+#endif // !PBL_PLATFORM_APLITE
 
 // clear the entire app back to nothing
 static void do_clear(void){
@@ -722,24 +735,24 @@ static void create_bell_icon(Layer* parent) {
 #define BG_COLOR_PAUSED GColorBulgarianRose
 
 static void render_background(Layer *layer, GContext *ctx) {
-    const GRect frame = layer_get_frame(layer);
-    const GPoint centre = grect_center_point(&frame);
-    const int16_t central_panel_radius = (frame.size.w * 0.38);
-    const uint16_t ring_thickness = (uint16_t) ((frame.size.w / 2) - central_panel_radius);
+    const GRect bounds = layer_get_bounds(layer);
+    const GPoint centre = grect_center_point(&bounds);
+    const int16_t central_panel_radius = (bounds.size.w * 0.38);
+    const uint16_t ring_thickness = (uint16_t) ((bounds.size.w / 2) - central_panel_radius);
     const bool is_overtime = s_state.alarm_duration && (s_state.elapsed_time >= s_state.alarm_duration);
 
     // background
     graphics_context_set_fill_color(ctx, BG_COLOR);
-    graphics_fill_rect(ctx, frame, 0, GCornerNone);
+    graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
     // ring background
     graphics_context_set_fill_color(ctx, is_overtime ? EMPTY_RING_COLOR : REMAINING_COLOR);
-    graphics_fill_radial(ctx, frame, GOvalScaleModeFillCircle, ring_thickness, DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
+    graphics_fill_radial(ctx, bounds, GOvalScaleModeFillCircle, ring_thickness, DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
 
     // ring foreground
     if (s_state.alarm_duration) {
         graphics_context_set_fill_color(ctx, is_overtime ? OVERTIME_COLOR : EMPTY_RING_COLOR);
-        graphics_fill_radial(ctx, frame, GOvalScaleModeFillCircle,
+        graphics_fill_radial(ctx, bounds, GOvalScaleModeFillCircle,
             ring_thickness,
             DEG_TO_TRIGANGLE(0),
             (TRIG_MAX_ANGLE * s_state.elapsed_time / s_state.alarm_duration) % (TRIG_MAX_ANGLE + 1)
@@ -781,14 +794,23 @@ static void create_alarm_icon(Layer* parent, int16_t alarm_text_y) {
 static void create_text_layout(Layer* parent) {
     const GRect bounds = layer_get_bounds(parent);
 
-    const GFont main_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
-    const int16_t main_text_h = 28;
-    const int16_t main_text_pad = 12; // total additional pixels above&below the main text's bounding box
-    const int16_t main_text_y = (bounds.size.h / 2) - ((main_text_h + main_text_pad) / 2);
     const GFont small_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
     const int16_t small_text_h = 18;
-    const int16_t spacing = 5;
+    const GFont main_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
+    const int16_t main_text_h = 28;
+
+    int16_t spacing;
+#if PBL_DISPLAY_HEIGHT < 180
+    spacing = 3;
+#elif PBL_DISPLAY_HEIGHT < 200
+    spacing = 4;
+#else // PBL_DISPLAY_HEIGHT >= 200
+    spacing = 5;
+#endif // PBL_DISPLAY_HEIGHT
+
     const int16_t first_text_y = (bounds.size.h / 4) - spacing;
+    const int16_t second_text_y = first_text_y + small_text_h + spacing;
+    const int16_t main_text_y = second_text_y + small_text_h + (spacing * 2);
 
     create_alarm_icon(parent, first_text_y);
 
@@ -806,6 +828,16 @@ static void create_text_layout(Layer* parent) {
     SMALL_TEXT(alarm_time, first_text_y);
     layer_add_child(parent, text_layer_get_layer(s_text_layer_alarm_time));
 
+    // duration
+    s_duration_layer = layer_create(GRect(0, second_text_y, bounds.size.w, small_text_h * 2));
+    layer_add_child(parent, s_duration_layer);
+
+    SMALL_TEXT(alarm_duration, 0);
+    layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_alarm_duration));
+
+    SMALL_TEXT(edit_indicator, small_text_h - 3);
+    layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_edit_indicator));
+
     // primary text (elapsed or remaining)
     s_text_layer_primary = text_layer_create(GRect(0, main_text_y, bounds.size.w, main_text_h));
     text_layer_set_text(s_text_layer_primary, s_elapsed_text);
@@ -814,16 +846,6 @@ static void create_text_layout(Layer* parent) {
     text_layer_set_background_color(s_text_layer_primary, GColorClear);
     text_layer_set_text_color(s_text_layer_primary, TEXT_COLOR);
     layer_add_child(parent, text_layer_get_layer(s_text_layer_primary));
-
-    // duration
-    s_duration_layer = layer_create(GRect(0, first_text_y + small_text_h + spacing, bounds.size.w, small_text_h * 2));
-    layer_add_child(parent, s_duration_layer);
-
-    SMALL_TEXT(alarm_duration, 0);
-    layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_alarm_duration));
-
-    SMALL_TEXT(edit_indicator, small_text_h - 3);
-    layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_edit_indicator));
 
     // secondary (elapsed or remaining)
     #define s_secondary_text s_remaining_text
@@ -839,19 +861,21 @@ static void main_window_load(Window *window) {
     Layer *window_layer = window_get_root_layer(window);
 
     // background
-    s_bg_layer = layer_create(layer_get_frame(window_layer));
+    s_bg_layer = layer_create(reduce_frame_for_system_bars(layer_get_frame(window_layer)));
     layer_set_update_proc(s_bg_layer, render_background);
     layer_add_child(window_layer, s_bg_layer);
 
     // bell icon
-    create_bell_icon(window_layer);
+    create_bell_icon(s_bg_layer);
 
     // text
-    create_text_layout(window_layer);
+    create_text_layout(s_bg_layer);
 
     // action bar
     s_action_bar = action_bar_layer_create();
+#if PBL_ROUND
     action_bar_layer_set_background_color(s_action_bar, GColorClear);
+#endif // PBL_ROUND
     action_bar_layer_add_to_window(s_action_bar, window);
     action_bar_layer_set_click_config_provider(s_action_bar, click_config_provider);
     s_icon_up = gbitmap_create_with_resource(RESOURCE_ID_ICON_UP);
@@ -895,7 +919,9 @@ static void main_window_load(Window *window) {
 static void main_window_unload(Window *window) {
     TRACE("main_window_unload");
 
+#if !PBL_PLATFORM_APLITE
     app_glance_reload(glance_reload_callback, NULL);
+#endif // !PBL_PLATFORM_APLITE
 
     // background
     layer_destroy(s_bg_layer);
