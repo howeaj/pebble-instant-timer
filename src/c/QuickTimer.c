@@ -682,6 +682,26 @@ static void click_config_provider(void *context) {
     window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 100, down_click_handler);
 }
 
+static void create_bell_icon(Layer* parent) {
+    s_icon_bell = gbitmap_create_with_resource(RESOURCE_ID_BELL);
+    s_bell_layer = rot_bitmap_layer_create(s_icon_bell);
+
+    // move the layer to the middle of its parent
+    const GRect parent_bounds = layer_get_bounds(parent);
+    const GSize size = layer_get_bounds((Layer*)s_bell_layer).size;
+    GRect new_bell_frame = {
+        .origin = {
+            (parent_bounds.size.h / 2) - (size.h / 2),
+            (parent_bounds.size.w / 2) - (size.w / 2)
+        },
+        .size = size
+    };
+    layer_set_frame((Layer*)s_bell_layer, new_bell_frame);
+
+    rot_bitmap_set_compositing_mode(s_bell_layer, GCompOpSet);  // enable transparency
+    layer_add_child(parent, (Layer*)s_bell_layer);
+}
+
 #define TEXT_COLOR GColorWhite
 #define BG_COLOR GColorBlack
 #define EMPTY_RING_COLOR GColorDarkGray
@@ -725,20 +745,18 @@ static void render_background(Layer *layer, GContext *ctx) {
     }
 }
 
-static void create_alarm_icon(Layer* parent) {
+static void create_alarm_icon(Layer* parent, int16_t alarm_text_y) {
     const GRect bounds = layer_get_bounds(parent);
 
     s_icon_alarm = gbitmap_create_with_resource(RESOURCE_ID_ALARM);
-    const int16_t size = 15;  // assuming its a square
+    const GSize size = gbitmap_get_bounds(s_icon_alarm).size;
 
-    // TODO put this in a layer together with the text it is meant to be with
-    // or use a font with an alarm emoji
-    GRect alarm_icon_frame = {
+    const GRect alarm_icon_frame = {
         .origin = {
-            (bounds.size.h / 2) - (size / 2) - 30,
-            (bounds.size.w / 2) - (size / 2) - 39
+            (bounds.size.w / 2) - (size.w / 2),
+            alarm_text_y - size.h + 1
         },
-        .size = {size, size}
+        .size = size
     };
 
     s_alarm_icon_layer = bitmap_layer_create(alarm_icon_frame);
@@ -748,45 +766,19 @@ static void create_alarm_icon(Layer* parent) {
     layer_add_child(parent, bitmap_layer_get_layer(s_alarm_icon_layer));
 }
 
-static void create_bell_icon(Layer* parent) {
-    s_icon_bell = gbitmap_create_with_resource(RESOURCE_ID_BELL);
-    s_bell_layer = rot_bitmap_layer_create(s_icon_bell);
-
-    // move the layer to the middle of its parent
-    const GRect parent_bounds = layer_get_bounds(parent);
-    const GSize size = layer_get_bounds((Layer*)s_bell_layer).size;
-    GRect new_bell_frame = {
-        .origin = {
-            (parent_bounds.size.h / 2) - (size.h / 2),
-            (parent_bounds.size.w / 2) - (size.w / 2)
-        },
-        .size = size
-    };
-    layer_set_frame((Layer*)s_bell_layer, new_bell_frame);
-
-    rot_bitmap_set_compositing_mode(s_bell_layer, GCompOpSet);  // enable transparency
-    layer_add_child(parent, (Layer*)s_bell_layer);
-}
-
 static void create_text_layout(Layer* parent) {
     const GRect bounds = layer_get_bounds(parent);
 
     const GFont main_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
     const int16_t main_text_h = 28;
-    const int16_t main_text_pad = 12; // total additional pixels above&below the maint ext's bounding box
+    const int16_t main_text_pad = 12; // total additional pixels above&below the main text's bounding box
     const int16_t main_text_y = (bounds.size.h / 2) - ((main_text_h + main_text_pad) / 2);
     const GFont small_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
     const int16_t small_text_h = 18;
-    const int16_t small_text_spacing = 5;
+    const int16_t spacing = 5;
+    const int16_t first_text_y = (bounds.size.h / 4) - spacing;
 
-    // primary text (elapsed or remaining)
-    s_text_layer_primary = text_layer_create(GRect(0, main_text_y, bounds.size.w, main_text_h));
-    text_layer_set_text(s_text_layer_primary, s_elapsed_text);
-    text_layer_set_text_alignment(s_text_layer_primary, GTextAlignmentCenter);
-    text_layer_set_font(s_text_layer_primary, main_text_font);
-    text_layer_set_background_color(s_text_layer_primary, GColorClear);
-    text_layer_set_text_color(s_text_layer_primary, TEXT_COLOR);
-    layer_add_child(parent, text_layer_get_layer(s_text_layer_primary));
+    create_alarm_icon(parent, first_text_y);
 
     #define SMALL_TEXT(name, y_loc) \
     MACRO_START \
@@ -797,10 +789,22 @@ static void create_text_layout(Layer* parent) {
         text_layer_set_background_color(s_text_layer_##name, GColorClear); \
         text_layer_set_text_color(s_text_layer_##name, TEXT_COLOR); \
     MACRO_END
-    const int16_t first_text_y = (bounds.size.h / 4) - (small_text_h / 2);
+
+    // alarm time
+    SMALL_TEXT(alarm_time, first_text_y);
+    layer_add_child(parent, text_layer_get_layer(s_text_layer_alarm_time));
+
+    // primary text (elapsed or remaining)
+    s_text_layer_primary = text_layer_create(GRect(0, main_text_y, bounds.size.w, main_text_h));
+    text_layer_set_text(s_text_layer_primary, s_elapsed_text);
+    text_layer_set_text_alignment(s_text_layer_primary, GTextAlignmentCenter);
+    text_layer_set_font(s_text_layer_primary, main_text_font);
+    text_layer_set_background_color(s_text_layer_primary, GColorClear);
+    text_layer_set_text_color(s_text_layer_primary, TEXT_COLOR);
+    layer_add_child(parent, text_layer_get_layer(s_text_layer_primary));
 
     // duration
-    s_duration_layer = layer_create(GRect(0, first_text_y, bounds.size.w, small_text_h * 2));
+    s_duration_layer = layer_create(GRect(0, first_text_y + small_text_h + spacing, bounds.size.w, small_text_h * 2));
     layer_add_child(parent, s_duration_layer);
 
     SMALL_TEXT(alarm_duration, 0);
@@ -809,13 +813,9 @@ static void create_text_layout(Layer* parent) {
     SMALL_TEXT(edit_indicator, small_text_h - 3);
     layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_edit_indicator));
 
-    // alarm time
-    SMALL_TEXT(alarm_time, first_text_y + small_text_h + small_text_spacing);
-    layer_add_child(parent, text_layer_get_layer(s_text_layer_alarm_time));
-
     // secondary (elapsed or remaining)
     #define s_secondary_text s_remaining_text
-    SMALL_TEXT(secondary, main_text_y + main_text_h + small_text_spacing);
+    SMALL_TEXT(secondary, main_text_y + main_text_h + spacing);
     layer_add_child(parent, text_layer_get_layer(s_text_layer_secondary));
     #undef s_secondary_text
 
@@ -833,9 +833,6 @@ static void main_window_load(Window *window) {
 
     // bell icon
     create_bell_icon(window_layer);
-
-    // alarm icon
-    create_alarm_icon(window_layer);
 
     // text
     create_text_layout(window_layer);
