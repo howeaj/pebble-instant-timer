@@ -1,9 +1,5 @@
 /*
     TODO
-        - bugfix alarm doesn't set while paused!
-        - reduce action bar icon size on chalk
-        - make pause bigger on rect
-        - repeat alarm on each time round
         - hide seconds when backlight off (not when <2mins remaining)
             light_enable_interaction() or prv_change_state(LIGHT_STATE_ON_TIMED)
             DEFAULT_BACKLIGHT_TIMEOUT_MS
@@ -14,6 +10,9 @@
         - bell icon
             - re-enable rotation animation?
             - convert to pdc?
+        - reduce action bar icon size on chalk
+        - make pause bigger on rect
+        - repeat alarm on each time round
         - timeline pin
         - configuration via clay
             - palletize icons ImageMagick
@@ -219,7 +218,7 @@ static void stopwatch_delete(void){
 /// Return the time at which the alarm should go off, or 0 if there is no future alarm.
 static time_t stopwatch_get_alarm_time(void) {
     const time_t end_time = s_state.start_time + s_state.alarm_duration;
-    if (s_state.is_counting && (end_time > time(NULL))) {
+    if (end_time > time(NULL)) {
         return end_time;
     } else {
         return 0;
@@ -409,14 +408,14 @@ static void alarm_schedule_any_wakeup(void) {
     ASSERT(s_state.alarm_wakeup_id == E_DOES_NOT_EXIST);
 
     time_t alarm_time = stopwatch_get_alarm_time();
-    if ((alarm_time != 0) && !s_state.is_alarm_done) {
+    if (s_state.is_counting && (alarm_time != 0)) {
         do {
             s_state.alarm_wakeup_id = wakeup_schedule(alarm_time, 0, true);
             alarm_time -= 1;
         } while (s_state.alarm_wakeup_id == E_RANGE);  // other app already scheduled wakeup within 1 minute
+        alarm_time += 1;
         ASSERT(s_state.alarm_wakeup_id >= 0);
 
-        alarm_time += 1;
         const struct tm* alarm_time_local = localtime(&alarm_time);
         char time_str[MAX_TEXT_SIZE] = {0};
         const size_t num_bytes = strftime(time_str, sizeof(time_str), "%H:%M:%S", alarm_time_local);
