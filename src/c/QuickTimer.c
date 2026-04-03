@@ -1,5 +1,6 @@
 /*
     TODO
+        - support other pebbles
         - hide seconds when backlight off (not when <2mins remaining)
             light_enable_interaction() or prv_change_state(LIGHT_STATE_ON_TIMED)
             DEFAULT_BACKLIGHT_TIMEOUT_MS
@@ -7,22 +8,20 @@
             - shake (AKA "tap") accel_tap_service_subscribe
                 - alerts_preferences_dnd_get_motion_backlight
             - battery state connected
-        - configuration via clay
         - bell icon
             - re-enable rotation animation?
             - convert to pdc?
-
-        - palletize icons ImageMagick
-            convert myimage.png \
-                -adaptive-resize '144x168>' \
-                -fill '#FFFFFF00' -opaque none \
-                -dither FloydSteinberg \
-                -remap pebble_colors_64.gif \
-                -define png:compression-level=9 -define png:compression-strategy=0 \
-                -define png:exclude-chunk=all \
-                myimage.pbl.png
         - timeline pin
-        - support other pebbles
+        - configuration via clay
+            - palletize icons ImageMagick
+                convert myimage.png \
+                    -adaptive-resize '144x168>' \
+                    -fill '#FFFFFF00' -opaque none \
+                    -dither FloydSteinberg \
+                    -remap pebble_colors_64.gif \
+                    -define png:compression-level=9 -define png:compression-strategy=0 \
+                    -define png:exclude-chunk=all \
+                    myimage.pbl.png
         - touchscreen control
 
     "targetPlatforms": [
@@ -341,7 +340,7 @@ static void alarm_pulse(void) {
     LOG("ALARM PULSE!");
     vibes_double_pulse();
     // TODO copy the pebble's builtin alarm pattern
-    // static const uint32_t const segments[] = { 200, 100, 400 };
+    // static const uint32_t segments[] = { 200, 100, 400 };
     // VibePattern pat = {
     //   .durations = segments,
     //   .num_segments = ARRAY_LENGTH(segments),
@@ -528,6 +527,17 @@ static void update_elapsed(void) {
     update_remaining();
 }
 
+// Short vibe on any calls to stopwatch_toggle, stopwatch_restart or stopwatch_clear
+static void vibe_for_start_stop(void) {
+    TRACE("vibe_for_start_stop");
+    static const uint32_t segments[] = {100};
+    VibePattern pat = {
+        .durations = segments,
+        .num_segments = ARRAY_LENGTH(segments),
+    };
+    vibes_enqueue_custom_pattern(pat);
+}
+
 
 /******************************************************************************
  Handlers
@@ -545,7 +555,6 @@ void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void 
         MACRO_START \
             AppGlanceResult result = app_glance_add_slice(session, slice); \
             ASSERT(result == APP_GLANCE_RESULT_SUCCESS); \
-            LOG("appglanceresult = %d", result);  \
         MACRO_END
 
     if (s_state.is_counting) {
@@ -572,6 +581,7 @@ static void do_clear(void){
     if (s_mode == MODE_CTRL) {
         s_mode = MODE_HOURS;
     }
+    vibe_for_start_stop();
     stopwatch_clear();
     update_alarm_duration();
     update_elapsed();
@@ -581,6 +591,7 @@ static void do_clear(void){
 
 // restart the timer, keeping the alarm duration
 static void do_restart(void){
+    vibe_for_start_stop();
     stopwatch_restart();
     update_elapsed();
     update_alarm_time();
@@ -647,6 +658,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
         }
         // toggle both on entry to and during MODE_CTRL
         if (s_mode == MODE_CTRL) {
+            vibe_for_start_stop();
             stopwatch_toggle();
         }
         update_action_bar();
@@ -865,6 +877,7 @@ static void main_window_load(Window *window) {
         stopwatch_tick();
         stopwatch_delete();
     } else {
+        vibe_for_start_stop();
         stopwatch_clear();
     }
     update_mode();
