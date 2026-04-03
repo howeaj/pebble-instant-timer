@@ -684,35 +684,35 @@ static void click_config_provider(void *context) {
 
 #define TEXT_COLOR GColorWhite
 #define BG_COLOR GColorBlack
+#define EMPTY_RING_COLOR GColorDarkGray
 #define REMAINING_COLOR GColorGreen
-#define ELAPSED_COLOR GColorBlack
 #define OVERTIME_COLOR GColorRed
 #define BG_COLOR_PAUSED GColorBulgarianRose
 
 static void render_background(Layer *layer, GContext *ctx) {
     const GRect frame = layer_get_frame(layer);
     const GPoint centre = grect_center_point(&frame);
-    const int central_panel_radius = 100;
-
+    const int16_t central_panel_radius = (frame.size.w * 0.38);
+    const uint16_t ring_thickness = (uint16_t) ((frame.size.w / 2) - central_panel_radius);
     const bool is_overtime = s_state.alarm_duration && (s_state.elapsed_time >= s_state.alarm_duration);
 
-    // remaining time
-    graphics_context_set_fill_color(ctx, is_overtime ? ELAPSED_COLOR : REMAINING_COLOR);
+    // background
+    graphics_context_set_fill_color(ctx, BG_COLOR);
     graphics_fill_rect(ctx, frame, 0, GCornerNone);
 
-    // expired time
+    // ring background
+    graphics_context_set_fill_color(ctx, is_overtime ? EMPTY_RING_COLOR : REMAINING_COLOR);
+    graphics_fill_radial(ctx, frame, GOvalScaleModeFillCircle, ring_thickness, DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
+
+    // ring foreground
     if (s_state.alarm_duration) {
-        graphics_context_set_fill_color(ctx, is_overtime ? OVERTIME_COLOR : ELAPSED_COLOR);
+        graphics_context_set_fill_color(ctx, is_overtime ? OVERTIME_COLOR : EMPTY_RING_COLOR);
         graphics_fill_radial(ctx, frame, GOvalScaleModeFillCircle,
-            (centre.x / 2) - central_panel_radius + 1,
+            ring_thickness,
             DEG_TO_TRIGANGLE(0),
             (TRIG_MAX_ANGLE * s_state.elapsed_time / s_state.alarm_duration) % (TRIG_MAX_ANGLE + 1)
         );
     }
-
-    // central panel
-    graphics_context_set_fill_color(ctx, BG_COLOR);
-    graphics_fill_circle(ctx, centre, central_panel_radius);
 
     // pause symbol
     if (!s_state.is_counting) {
