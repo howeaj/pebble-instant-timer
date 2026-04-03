@@ -11,6 +11,7 @@
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
+      "emery",
       "gabbro"
     ],
     "watchapp": {
@@ -23,48 +24,48 @@
       "media": [
         {
           "type": "bitmap",
+          "name": "ICON_DOWN",
+          "file": "images/action_bar_caret_down.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "ICON_RIGHT",
+          "file": "images/action_bar_caret_right.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "ICON_UP",
+          "file": "images/action_bar_caret_up.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "ICON_DELETE",
+          "file": "images/action_bar_cross.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "ICON_PAUSE",
+          "file": "images/action_bar_pause.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "ICON_REWIND",
+          "file": "images/action_bar_rewind.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "ICON_START",
+          "file": "images/action_bar_start.png"
+        },
+        {
+          "type": "bitmap",
           "name": "ALARM",
-          "file": "images/alarm_15x15_white.png"
+          "file": "images/alarm_15x15.png"
         },
         {
           "type": "bitmap",
           "name": "BELL",
           "file": "images/bell_180_red.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "ICON_UP",
-          "file": "images/action_bar_icon_up.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "ICON_RIGHT",
-          "file": "images/25px_Caret_right.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "ICON_DOWN",
-          "file": "images/action_bar_icon_down.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "ICON_REFRESH",
-          "file": "images/25px_Check_for_updates.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "ICON_START",
-          "file": "images/action_bar_icon_start.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "ICON_PAUSE",
-          "file": "images/action_bar_icon_pause.png"
-        },
-        {
-          "type": "bitmap",
-          "name": "ICON_DELETE",
-          "file": "images/25px_Delete_trash.png"
         }
       ]
     }

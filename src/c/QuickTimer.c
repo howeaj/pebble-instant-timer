@@ -1,7 +1,5 @@
 /*
     TODO
-        - app icon
-        - better icons
         - hide seconds when backlight off (not when <2mins remaining)
             light_enable_interaction() or prv_change_state(LIGHT_STATE_ON_TIMED)
             DEFAULT_BACKLIGHT_TIMEOUT_MS
@@ -9,10 +7,20 @@
             - shake (AKA "tap") accel_tap_service_subscribe
                 - alerts_preferences_dnd_get_motion_backlight
             - battery state connected
-
+        - configuration via clay
         - bell icon
             - re-enable rotation animation?
             - convert to pdc?
+
+        - palletize icons ImageMagick
+            convert myimage.png \
+                -adaptive-resize '144x168>' \
+                -fill '#FFFFFF00' -opaque none \
+                -dither FloydSteinberg \
+                -remap pebble_colors_64.gif \
+                -define png:compression-level=9 -define png:compression-strategy=0 \
+                -define png:exclude-chunk=all \
+                myimage.pbl.png
         - timeline pin
         - support other pebbles
         - touchscreen control
@@ -411,6 +419,7 @@ static void alarm_reset(void) {
  UI updates
 ******************************************************************************/
 
+/// Note: Max icon size is 28x18, recommended 15x15
 static void update_action_bar(void) {
     TRACE("update_action_bar");
     const GBitmap* icon_toggle = s_state.is_counting ? s_icon_pause : s_icon_start;
@@ -419,6 +428,7 @@ static void update_action_bar(void) {
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, icon_toggle, true);
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_delete, true);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
+        action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveLeft);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
     } else {
         const GBitmap* icon_mode = (get_next_mode(true) == MODE_CTRL ? icon_toggle : s_icon_right);
@@ -426,6 +436,7 @@ static void update_action_bar(void) {
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, icon_mode, true);
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_down, true);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveUp);
+        action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveRight);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveDown);
     }
 }
@@ -837,7 +848,7 @@ static void main_window_load(Window *window) {
     s_icon_up = gbitmap_create_with_resource(RESOURCE_ID_ICON_UP);
     s_icon_right = gbitmap_create_with_resource(RESOURCE_ID_ICON_RIGHT);
     s_icon_down = gbitmap_create_with_resource(RESOURCE_ID_ICON_DOWN);
-    s_icon_refresh = gbitmap_create_with_resource(RESOURCE_ID_ICON_REFRESH);
+    s_icon_refresh = gbitmap_create_with_resource(RESOURCE_ID_ICON_REWIND);
     s_icon_start = gbitmap_create_with_resource(RESOURCE_ID_ICON_START);
     s_icon_pause = gbitmap_create_with_resource(RESOURCE_ID_ICON_PAUSE);
     s_icon_delete = gbitmap_create_with_resource(RESOURCE_ID_ICON_DELETE);
