@@ -1,6 +1,8 @@
 /*
     TODO
+        - bugfix alarm doesn't set while paused!
         - reduce action bar icon size on chalk
+        - make pause bigger on rect
         - repeat alarm on each time round
         - hide seconds when backlight off (not when <2mins remaining)
             light_enable_interaction() or prv_change_state(LIGHT_STATE_ON_TIMED)
@@ -81,6 +83,9 @@ static GBitmap* s_icon_pause;
 static GBitmap* s_icon_start;
 static GBitmap* s_icon_delete;
 static GBitmap* s_icon_refresh;
+#if PBL_RECT
+    static GBitmap* s_icon_tick;
+#endif // PBL_RECT
 
 typedef enum IncrementMode_e {
     INCR_HOURS = 0,
@@ -148,7 +153,7 @@ static void snprintf_time(char* target, size_t size, const char* fmt, time_t tim
 GRect reduce_frame_for_system_bars(const GRect frame) {
 #if PBL_ROUND
     return frame;
-#else  // PBL_RECT
+#else // PBL_RECT
     return (GRect) {
         .origin = {
             .x = frame.origin.x,
@@ -159,7 +164,7 @@ GRect reduce_frame_for_system_bars(const GRect frame) {
             .h = frame.size.h - STATUS_BAR_LAYER_HEIGHT
         }
     };
-#endif  // PBL_RECT
+#endif // PBL_RECT
 }
 
 
@@ -452,6 +457,28 @@ static void update_action_bar(void) {
     }
 }
 
+// Toggle visibility of the action bar
+static void toggle_action_bar(bool visible) {
+    static bool was_visible = true;
+    if (visible != was_visible){
+#if PBL_ROUND
+        layer_set_hidden((Layer*)s_action_bar, !visible);
+#else // PBL_RECT
+        if (visible) {
+            update_action_bar();
+        } else {
+            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_tick, true);
+            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, s_icon_tick, true);
+            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_tick, true);
+            action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
+            action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveLeft);
+            action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
+        }
+#endif // PBL_RECT
+        was_visible = visible;
+    }
+}
+
 static void update_primary_and_secondary_text(void) {
     if (s_state.alarm_duration > 0) {
         text_layer_set_text(s_text_layer_primary, s_remaining_text);
@@ -618,6 +645,15 @@ static void do_increment(bool add, ClickRecognizerRef recognizer) {
     update_remaining();
 }
 
+// return true if the alarm was cleared
+static bool do_alarm_clear(void) {
+    const bool cleared = alarm_clear();
+    if (cleared) {
+        toggle_action_bar(true);
+    }
+    return cleared;
+}
+
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     // TRACE("tick_handler");
     if (s_state.is_counting) {
@@ -626,10 +662,10 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
         if (alarm_should_start()) {
             alarm_start();
         }
+        toggle_action_bar(!alarm_is_pulsing());
     } else {
         update_alarm_time();
     }
-    layer_set_hidden((Layer*)s_action_bar, alarm_is_pulsing());
 
     // TODO chugs the emulator to hell
     layer_set_hidden((Layer*)s_bell_layer, true);// TODO !alarm_is_pulsing());
@@ -642,7 +678,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("up_click_handler");
-    if (!alarm_clear()) {
+    if (!do_alarm_clear()) {
         if (s_mode == MODE_CTRL) {
             do_restart();
         } else {
@@ -653,7 +689,7 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("down_click_handler");
-    if (!alarm_clear()) {
+    if (!do_alarm_clear()) {
         if (s_mode == MODE_CTRL) {
             do_clear();
         } else {
@@ -664,7 +700,7 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("select_click_handler");
-    if (!alarm_clear()) {
+    if (!do_alarm_clear()) {
         if (s_mode != MODE_CTRL) {
             increment_mode(true);
             update_mode();
@@ -680,14 +716,14 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("select_long_click_handler");
-    if (!alarm_clear()) {
+    if (!do_alarm_clear()) {
         do_clear();
     }
 }
 
 static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("back_click_handler");
-    if (!alarm_clear()) {
+    if (!do_alarm_clear()) {
         increment_mode(false);
         if (s_mode == MODE_EXIT) {
             LOG("Back click - exit");
@@ -731,7 +767,7 @@ static void create_bell_icon(Layer* parent) {
 #define BG_COLOR GColorBlack
 #define EMPTY_RING_COLOR GColorDarkGray
 #define REMAINING_COLOR GColorGreen
-#define OVERTIME_COLOR GColorRed
+#define OVERTIME_COLOR PBL_IF_COLOR_ELSE(GColorRed, GColorGreen)
 #define BG_COLOR_PAUSED GColorBulgarianRose
 
 static void render_background(Layer *layer, GContext *ctx) {
@@ -885,6 +921,9 @@ static void main_window_load(Window *window) {
     s_icon_start = gbitmap_create_with_resource(RESOURCE_ID_ICON_START);
     s_icon_pause = gbitmap_create_with_resource(RESOURCE_ID_ICON_PAUSE);
     s_icon_delete = gbitmap_create_with_resource(RESOURCE_ID_ICON_DELETE);
+#if PBL_RECT
+    s_icon_tick = gbitmap_create_with_resource(RESOURCE_ID_ICON_TICK);
+#endif // PBL_RECT
 
     // status bar
     s_status_bar = status_bar_layer_create();
@@ -955,6 +994,9 @@ static void main_window_unload(Window *window) {
     gbitmap_destroy(s_icon_start);
     gbitmap_destroy(s_icon_pause);
     gbitmap_destroy(s_icon_delete);
+#if PBL_RECT
+    gbitmap_destroy(s_icon_tick);
+#endif // PBL_RECT
 
     // status bar
     status_bar_layer_destroy(s_status_bar);

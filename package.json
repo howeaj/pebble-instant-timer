@@ -64,6 +64,18 @@
         },
         {
           "type": "bitmap",
+          "name": "ICON_TICK",
+          "file": "images/action_bar_check.png",
+          "targetPlatforms": [
+            "aplite",
+            "basalt",
+            "diorite",
+            "emery",
+            "flint"
+          ]
+        },
+        {
+          "type": "bitmap",
           "name": "ALARM",
           "file": "images/alarm_15x15.png"
         },
