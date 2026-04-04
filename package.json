@@ -80,9 +80,9 @@
           "file": "images/alarm_15x15.png"
         },
         {
-          "type": "bitmap",
+          "type": "raw",
           "name": "BELL",
-          "file": "images/bell_180_red.png"
+          "file": "images/bell.pdc"
         }
       ]
     }

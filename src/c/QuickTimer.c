@@ -1,8 +1,8 @@
 /*
     TODO
         - bell icon
-            - re-enable rotation animation?
-            - convert to pdc?
+            - rotation animation
+            - support smaller screens
         - make pause bigger on rect
         - reduce action bar icon size on chalk
         - repeat alarm on each time round?
@@ -52,8 +52,7 @@ static Layer* s_bg_layer;
 static Layer* s_duration_layer;
 static PropertyAnimation* s_edit_indicator_animation;
 
-static RotBitmapLayer* s_bell_layer;
-static GBitmap* s_icon_bell;
+static GDrawCommandImage* s_icon_bell;
 
 static BitmapLayer* s_alarm_icon_layer;
 static GBitmap* s_icon_alarm;
@@ -145,7 +144,7 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
 }
 
 // format a time_t into a string
-static void snprintf_time(char* target, size_t size, const char* fmt, time_t time) {
+void snprintf_time(char* target, size_t size, const char* fmt, time_t time) {
     char time_str[MAX_TEXT_SIZE] = {0};
     const char* time_fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M%P";
     strftime(time_str, sizeof(time_str), time_fmt, localtime(&time));
@@ -689,13 +688,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
         update_alarm_time();
     }
 
-    // TODO chugs the emulator to hell
-    layer_set_hidden((Layer*)s_bell_layer, true);// TODO !alarm_is_pulsing());
-    // if (alarm_is_pulsing()) {
-    //     static int16_t angle = 30;
-    //     angle *= -1;
-    //     rot_bitmap_layer_set_angle(s_bell_layer, DEG_TO_TRIGANGLE(angle));
-    // }
+    // TODO swap between two bell rotations
 }
 
 static void update_rate_timer_callback(void* data);
@@ -861,25 +854,6 @@ static void click_config_provider(void *context) {
     window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 100, down_click_handler);
 }
 
-static void create_bell_icon(Layer* parent) {
-    s_icon_bell = gbitmap_create_with_resource(RESOURCE_ID_BELL);
-    s_bell_layer = rot_bitmap_layer_create(s_icon_bell);
-
-    // move the layer to the middle of its parent
-    const GRect parent_bounds = layer_get_bounds(parent);
-    const GSize size = layer_get_bounds((Layer*)s_bell_layer).size;
-    GRect new_bell_frame = {
-        .origin = {
-            (parent_bounds.size.h / 2) - (size.h / 2),
-            (parent_bounds.size.w / 2) - (size.w / 2)
-        },
-        .size = size
-    };
-    layer_set_frame((Layer*)s_bell_layer, new_bell_frame);
-
-    rot_bitmap_set_compositing_mode(s_bell_layer, GCompOpSet);  // enable transparency
-    layer_add_child(parent, (Layer*)s_bell_layer);
-}
 
 #define TEXT_COLOR GColorWhite
 #define BG_COLOR GColorBlack
@@ -888,9 +862,20 @@ static void create_bell_icon(Layer* parent) {
 #define OVERTIME_COLOR PBL_IF_COLOR_ELSE(GColorRed, GColorGreen)
 #define BG_COLOR_PAUSED GColorBulgarianRose
 
+#if PBL_COLOR
+static void draw_bell_icon(GPoint centre, GContext *ctx) {
+    const GSize size = gdraw_command_image_get_bounds_size(s_icon_bell);
+    const GPoint origin = {
+        centre.x - (size.w / 2),
+        centre.y - (size.h / 2)
+    };
+    graphics_context_set_fill_color(ctx, BG_COLOR_PAUSED);
+    gdraw_command_image_draw(ctx, s_icon_bell, origin);
+}
+#endif // PBL_COLOR
+
 static void render_background(Layer *layer, GContext *ctx) {
     const GRect bounds = layer_get_bounds(layer);
-    const GPoint centre = grect_center_point(&bounds);
     const int16_t central_panel_radius = (bounds.size.w * 0.38);
     const uint16_t ring_thickness = (uint16_t) ((bounds.size.w / 2) - central_panel_radius);
     const bool is_overtime = s_state.alarm_duration && (s_state.elapsed_time >= s_state.alarm_duration);
@@ -913,6 +898,8 @@ static void render_background(Layer *layer, GContext *ctx) {
         );
     }
 
+#if PBL_COLOR
+    const GPoint centre = grect_center_point(&bounds);
     // pause symbol
     if (!s_state.is_counting) {
         const GSize pause_size = {central_panel_radius / 2.5, central_panel_radius * 1.5};
@@ -922,6 +909,10 @@ static void render_background(Layer *layer, GContext *ctx) {
         pause_origin.x += pause_size.w * 2;
         graphics_fill_rect(ctx, (GRect){.origin=pause_origin, .size=pause_size}, 2, GCornersAll);
     }
+    else if (alarm_is_pulsing()) {
+        draw_bell_icon(centre, ctx);
+    }
+#endif // PBL_COLOR
 }
 
 static void create_alarm_icon(Layer* parent, int16_t alarm_text_y) {
@@ -1015,12 +1006,10 @@ static void main_window_load(Window *window) {
     Layer *window_layer = window_get_root_layer(window);
 
     // background
+    s_icon_bell = gdraw_command_image_create_with_resource(RESOURCE_ID_BELL);
     s_bg_layer = layer_create(reduce_frame_for_system_bars(layer_get_frame(window_layer)));
     layer_set_update_proc(s_bg_layer, render_background);
     layer_add_child(window_layer, s_bg_layer);
-
-    // bell icon
-    create_bell_icon(s_bg_layer);
 
     // text
     create_text_layout(s_bg_layer);
@@ -1083,11 +1072,8 @@ static void main_window_unload(Window *window) {
 #endif // !PBL_PLATFORM_APLITE
 
     // background
+    gdraw_command_image_destroy(s_icon_bell);
     layer_destroy(s_bg_layer);
-
-    // bell icon
-    gbitmap_destroy(s_icon_bell);
-    rot_bitmap_layer_destroy(s_bell_layer);
 
     // alarm icon
     gbitmap_destroy(s_icon_alarm);
