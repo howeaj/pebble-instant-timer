@@ -1,12 +1,6 @@
 /*
     TODO
-        - hide seconds when backlight off (not when <2mins remaining)
-            light_enable_interaction() or prv_change_state(LIGHT_STATE_ON_TIMED)
-            DEFAULT_BACKLIGHT_TIMEOUT_MS
-            - any button *released*
-            - shake (AKA "tap") accel_tap_service_subscribe
-                - alerts_preferences_dnd_get_motion_backlight
-            - battery state connected
+        - hide seconds while on MINUTE_UNIT update timer
         - bell icon
             - re-enable rotation animation?
             - convert to pdc?
@@ -42,6 +36,7 @@
 #define TRACE(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__)
 #define ASSERT(condition) if (!(condition)) APP_LOG(APP_LOG_LEVEL_ERROR, "ASSERTION FAILED ON LINE %d", __LINE__)
 #define TIME_MAX INT32_MAX  // maximum storeable value of time_t
+#define MS_PER_S (1000)
 
 #define LONG_CLICK_DURATION (500)  // duration for long click events
 
@@ -259,7 +254,7 @@ static void stopwatch_clear(void){
     This doesn't count handling of decrements below 0.
 */
 static time_t get_alarm_increment_diff(const IncrementMode incr, const bool add) {
-    // Each increment adds 15s until 2 minutes, then by 30s after 5m etc
+    // Each increment adds 15s until 2 minutes, then by 30s until 5m etc
     const time_t diffs[4]      = {5,   30,   60,    60*5};  // TODO 15 not 5
     const time_t thresholds[4] = {2*60, 5*60, 30*60, TIME_MAX};
     int bucket = 0;
@@ -675,6 +670,68 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
     // }
 }
 
+static void update_rate_timer_callback(void* data);
+
+static void update_tick_subscription(TimeUnits new_tick_units) {
+    TRACE("update_tick_subscription");
+    #define HIGH_RATE_TIMEOUT_S (5)
+    static TimeUnits tick_units = YEAR_UNIT;
+    static AppTimer* update_rate_timer = NULL;
+
+    if (tick_units != new_tick_units) {
+        tick_units = new_tick_units;
+        tick_timer_service_subscribe(new_tick_units, tick_handler);
+        tick_handler(NULL, 0);  // update to new layout
+    }
+
+    if (new_tick_units == SECOND_UNIT) {
+        // set the timer to drop back to minutes
+        #define SHORT_STOPWATCH_S (60)
+        #define SHORT_ALARM_S (120)
+        const time_t remaining = s_state.alarm_duration - s_state.elapsed_time;
+        const bool is_short_alarm = (remaining > 0) && (s_state.alarm_duration < SHORT_ALARM_S);
+        const bool is_short_stopwatch = (s_state.alarm_duration == 0) && (s_state.elapsed_time < SHORT_STOPWATCH_S);
+        time_t high_rate_timeout_s;
+        if (is_short_alarm) {
+            high_rate_timeout_s = remaining + HIGH_RATE_TIMEOUT_S;
+        } else if (is_short_stopwatch) {
+            high_rate_timeout_s = MAX(SHORT_STOPWATCH_S - s_state.elapsed_time, HIGH_RATE_TIMEOUT_S);
+        } else {
+            high_rate_timeout_s = HIGH_RATE_TIMEOUT_S;
+        }
+        const uint32_t high_rate_timeout_ms = (uint32_t) (high_rate_timeout_s * MS_PER_S);
+        if (update_rate_timer == NULL) {
+            update_rate_timer = app_timer_register(high_rate_timeout_ms, update_rate_timer_callback, NULL);
+        } else {
+            app_timer_reschedule(update_rate_timer, high_rate_timeout_ms);
+        }
+    } else {  // the only thing that calls this function with MINUTE_UNIT is the timer, so it has expired
+        // TODO set to minute update while paused?
+        update_rate_timer = NULL;
+    }
+
+}
+
+// Timer callback which reduces the rate of tick_handler to 1minute after its timer expires
+static void update_rate_timer_callback(void* data) {
+    TRACE("update_rate_timer_callback");
+    update_tick_subscription(MINUTE_UNIT);
+}
+
+static void battery_state_handler(BatteryChargeState charge) {
+    TRACE("battery_state_handler");
+    static bool was_plugged = false;
+    if (charge.is_plugged != was_plugged) {
+        update_tick_subscription(SECOND_UNIT);
+        was_plugged = charge.is_plugged;
+    }
+}
+
+static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
+    TRACE("accel_tap_handler");
+    update_tick_subscription(SECOND_UNIT);
+}
+
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("up_click_handler");
     if (!do_alarm_clear()) {
@@ -684,6 +741,7 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
             do_increment(true, recognizer);
         }
     }
+    update_tick_subscription(SECOND_UNIT);
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -695,6 +753,7 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
             do_increment(false, recognizer);
         }
     }
+    update_tick_subscription(SECOND_UNIT);
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -711,6 +770,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
         }
         update_action_bar();
     }
+    update_tick_subscription(SECOND_UNIT);
 }
 
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -718,6 +778,7 @@ static void select_long_click_handler(ClickRecognizerRef recognizer, void *conte
     if (!do_alarm_clear()) {
         do_clear();
     }
+    update_tick_subscription(SECOND_UNIT);
 }
 
 static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -732,6 +793,7 @@ static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
             update_action_bar();
         }
     }
+    update_tick_subscription(SECOND_UNIT);
 }
 
 static void click_config_provider(void *context) {
@@ -931,7 +993,9 @@ static void main_window_load(Window *window) {
     // status_bar_layer_set_separator_mode(s_status_bar, StatusBarLayerSeparatorModeDotted);
 
     // services
-    tick_timer_service_subscribe(SECOND_UNIT, tick_handler);
+    update_tick_subscription(SECOND_UNIT);
+    accel_tap_service_subscribe(accel_tap_handler);
+    battery_state_service_subscribe(battery_state_handler);
 
     // business logic
     s_initialising = true;
@@ -1002,6 +1066,8 @@ static void main_window_unload(Window *window) {
 
     // services
     tick_timer_service_unsubscribe();
+    accel_tap_service_unsubscribe();
+    battery_state_service_unsubscribe();
 
     // business logic
     if (!alarm_clear()){
