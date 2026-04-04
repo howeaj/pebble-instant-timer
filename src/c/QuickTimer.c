@@ -1,15 +1,16 @@
 /*
     TODO
-        - hide seconds while on MINUTE_UNIT update timer
         - bell icon
             - re-enable rotation animation?
             - convert to pdc?
-        - reduce action bar icon size on chalk
         - make pause bigger on rect
-        - repeat alarm on each time round
+        - reduce action bar icon size on chalk
+        - repeat alarm on each time round?
         - timeline pin
+        - obey system "content size" setting?
         - configuration via clay
-            - palletize icons ImageMagick
+            - all colours
+            - convert icons to .pdc or palletize with ImageMagick
                 convert myimage.png \
                     -adaptive-resize '144x168>' \
                     -fill '#FFFFFF00' -opaque none \
@@ -19,8 +20,8 @@
                     -define png:exclude-chunk=all \
                     myimage.pbl.png
         - touchscreen control
-
-
+            - fast timer/alarm setting
+            - treat as activity for update_tick_subscription
 */
 
 #include <pebble.h>
@@ -32,15 +33,17 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 #define ABS(a) (((a) >= 0) ? (a) : ((a) * -1))
+#define ABSDIFF(a, b) ((a) >= (b) ? (a) - (b) : (b) - (a))
 #define LOG(...) APP_LOG(APP_LOG_LEVEL_INFO, __VA_ARGS__)
 #define TRACE(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__)
-#define ASSERT(condition) if (!(condition)) APP_LOG(APP_LOG_LEVEL_ERROR, "ASSERTION FAILED ON LINE %d", __LINE__)
+#define ASSERT(condition) if (!(condition)) APP_LOG(APP_LOG_LEVEL_ERROR, "ASSERTION FAILED AT %s:%d - "#condition, __FILE__, __LINE__)
 #define TIME_MAX INT32_MAX  // maximum storeable value of time_t
 #define MS_PER_S (1000)
 
 #define LONG_CLICK_DURATION (500)  // duration for long click events
+#define DEFAULT_BACKLIGHT_TIMEOUT_MS 3000  // The system timeout for the backlight after activity, from prefs.h
+#define LIGHT_FADE_TIME_MS 500  // The system duration for backlight fade, from light.c
 
-#define DEFAULT_BACKLIGHT_TIMEOUT_MS 3000 // TODO
 
 static Window *s_main_window;
 static StatusBarLayer *s_status_bar;
@@ -116,20 +119,27 @@ State_t s_state = {
 };
 
 static bool s_initialising = true;
+static TimeUnits s_update_rate = YEAR_UNIT;
 
 
 /// Format `seconds` into a `buffer` of `size` as hours, minutes, seconds
-static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate) {
+/// `truncate` to exclude unused units
+/// `show_s` to show seconds unit
+static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate, bool show_s) {
     const char* neg = seconds < 0 ? "-" : "";
     const int abs_seconds = ABS(seconds);
     const int h = abs_seconds / SECONDS_PER_HOUR ;
     const int m = (abs_seconds % SECONDS_PER_HOUR ) / SECONDS_PER_MINUTE;
     const int s = abs_seconds % SECONDS_PER_MINUTE;
     if (h || !truncate) {
-        snprintf(buffer, size, "%s%dh%02dm%02ds", neg, h, m, s);
-    } else if (m) {
-        snprintf(buffer, size, "%s%dm%02ds", neg, m, s);
+        // TODO I wish this font was fixed-width; use ...
+        const char* fmt = show_s ? "%s%dh%02dm%02ds" : "%s%dh%02dm......";
+        snprintf(buffer, size, fmt, neg, h, m, s);
+    } else if (m || (s_update_rate == MINUTE_UNIT)) {
+        const char* fmt = show_s ? "%s%dm%02ds" : "%s%dm......";
+        snprintf(buffer, size, fmt, neg, m, s);
     } else {
+        ASSERT(show_s);
         snprintf(buffer, size, "%s%ds", neg, s);
     }
 }
@@ -359,11 +369,19 @@ static void alarm_pulse(void) {
     // vibes_enqueue_custom_pattern(pat);
 }
 
+static bool alarm_is_pulsing(void) {
+    return s_alarm_pulse_timer;
+}
+
+// Return the time at which alarm pulses would automatically end
+static time_t alarm_get_pulse_end_time() {
+    return s_state.start_time + s_state.alarm_duration + ALARM_PULSE_DURATION;
+}
+
 /// Repeat alarm_pulse() until ALARM_PULSE_DURATION is up
 static void alarm_pulse_timer_handler(void* data) {
     alarm_pulse();
-    const time_t end_time = s_state.start_time + s_state.alarm_duration;
-    if ((time(NULL) - end_time) < ALARM_PULSE_DURATION) {
+    if (time(NULL) < alarm_get_pulse_end_time()) {
         s_alarm_pulse_timer = app_timer_register(2000, alarm_pulse_timer_handler, NULL);
     } else {
         (void) alarm_clear();
@@ -384,10 +402,6 @@ static void alarm_start(void) {
     ASSERT(s_alarm_pulse_timer == NULL);
     ASSERT(!s_state.is_alarm_done);
     alarm_pulse_timer_handler(NULL);
-}
-
-static bool alarm_is_pulsing(void) {
-    return s_alarm_pulse_timer;
 }
 
 static void alarm_cancel_any_wakeup(void) {
@@ -428,6 +442,11 @@ static void alarm_reset(void) {
 /******************************************************************************
  UI updates
 ******************************************************************************/
+
+// Return true if seconds should be shown for elapsed/remaining
+static bool should_show_seconds(void) {
+    return (s_update_rate == SECOND_UNIT) || !s_state.is_counting;
+}
 
 /// Note: Max icon size is 28x18, recommended 15x15
 static void update_action_bar(void) {
@@ -504,7 +523,7 @@ static void update_remaining(void) {
     bool show_alarm_icon = false;
     if (s_state.alarm_duration > 0) {
         const time_t remaining = s_state.alarm_duration - s_state.elapsed_time;
-        snprintf_hms(s_remaining_text, sizeof(s_remaining_text), remaining, true);
+        snprintf_hms(s_remaining_text, sizeof(s_remaining_text), remaining, true, should_show_seconds());
         show_alarm_icon = remaining > 0;
     }
     layer_set_hidden(bitmap_layer_get_layer(s_alarm_icon_layer), !show_alarm_icon);
@@ -547,7 +566,8 @@ static void update_mode(void) {
 
 static void update_alarm_duration(void) {
     TRACE("update_alarm_duration");
-    snprintf_hms(s_alarm_duration_text, sizeof(s_alarm_duration_text), s_state.alarm_duration, false);
+    // TODO dont show seconds when duration is long
+    snprintf_hms(s_alarm_duration_text, sizeof(s_alarm_duration_text), s_state.alarm_duration, false, true);
     text_layer_set_text(s_text_layer_alarm_duration, s_alarm_duration_text);
 
     update_mode();
@@ -556,7 +576,7 @@ static void update_alarm_duration(void) {
 
 static void update_elapsed(void) {
     // TRACE("update_elapsed");
-    snprintf_hms(s_elapsed_text, sizeof(s_elapsed_text), s_state.elapsed_time, true);
+    snprintf_hms(s_elapsed_text, sizeof(s_elapsed_text), s_state.elapsed_time, true, should_show_seconds());
     update_remaining();
 }
 
@@ -575,6 +595,7 @@ static void vibe_for_start_stop(void) {
 /******************************************************************************
  Handlers
 ******************************************************************************/
+
 #if !PBL_PLATFORM_APLITE
 void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void *context) {
     char subtitle[150] = {0};
@@ -631,6 +652,13 @@ static void do_restart(void){
     update_alarm_time();
 }
 
+// pause/unpause the timer
+static void do_toggle_pause(void) {
+    vibe_for_start_stop();
+    stopwatch_toggle();
+    update_elapsed();  // to unhide seconds
+}
+
 // modify the alarm duration
 static void do_increment(bool add, ClickRecognizerRef recognizer) {
     increment_alarm((IncrementMode)s_mode, add, !click_recognizer_is_repeating(recognizer));
@@ -672,47 +700,77 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void update_rate_timer_callback(void* data);
 
-static void update_tick_subscription(TimeUnits new_tick_units) {
+/** Control the state update rate.
+    To save power, update as little as possible.
+
+    We only want to update seconds if the user is probably looking:
+        - if we're in "stopwatch mode" and 1min hasn't elapsed yet
+        - if the alarm duration is very short (including after the alarm has expired; show looping overtime)
+        - if there are any signs of user activity (buttons, accel-tap/shake, battery charger, TODO screen touch)
+        - if the alarm is pulsing (especially because the overtime counter is below ALARM_PULSE_DURATION)
+*/
+static void update_tick_subscription(TimeUnits new_update_rate) {
     TRACE("update_tick_subscription");
-    #define HIGH_RATE_TIMEOUT_S (5)
-    static TimeUnits tick_units = YEAR_UNIT;
+    #define HIGH_RATE_TIMEOUT_MS (DEFAULT_BACKLIGHT_TIMEOUT_MS + LIGHT_FADE_TIME_MS)
+    #define SHORT_ALARM_S (120)
+    #define SHORT_STOPWATCH_S (60)
     static AppTimer* update_rate_timer = NULL;
 
-    if (tick_units != new_tick_units) {
-        tick_units = new_tick_units;
-        tick_timer_service_subscribe(new_tick_units, tick_handler);
-        tick_handler(NULL, 0);  // update to new layout
+    const bool is_short_alarm = (s_state.alarm_duration < SHORT_ALARM_S);
+
+    if (!s_state.is_counting) {
+        // if paused, the only thing that can change is the alarm time, which only shows minutes
+        // so force a slower update rate than requested
+        if (stopwatch_get_alarm_time()) {
+            LOG("Forced minute update rate");
+            new_update_rate = MINUTE_UNIT;
+        } else {
+            LOG("Forced disabled update rate");
+            new_update_rate = MONTH_UNIT;
+        }
+    } else if (alarm_is_pulsing() || is_short_alarm) {
+        // full rate while alarm is short or pulsing
+        LOG("Forced second update rate");
+        new_update_rate = SECOND_UNIT;
     }
 
-    if (new_tick_units == SECOND_UNIT) {
+    if (s_update_rate != new_update_rate) {
+        s_update_rate = new_update_rate;
+        tick_timer_service_subscribe(new_update_rate, tick_handler);
+        tick_handler(NULL, 0);  // update to new layout
+        LOG("Update rate changed to %d", new_update_rate);
+    }
+
+    if ((new_update_rate == SECOND_UNIT) && !is_short_alarm) {
         // set the timer to drop back to minutes
-        #define SHORT_STOPWATCH_S (60)
-        #define SHORT_ALARM_S (120)
-        const time_t remaining = s_state.alarm_duration - s_state.elapsed_time;
-        const bool is_short_alarm = (remaining > 0) && (s_state.alarm_duration < SHORT_ALARM_S);
+        uint32_t high_rate_timeout_ms;
         const bool is_short_stopwatch = (s_state.alarm_duration == 0) && (s_state.elapsed_time < SHORT_STOPWATCH_S);
-        time_t high_rate_timeout_s;
-        if (is_short_alarm) {
-            high_rate_timeout_s = remaining + HIGH_RATE_TIMEOUT_S;
-        } else if (is_short_stopwatch) {
-            high_rate_timeout_s = MAX(SHORT_STOPWATCH_S - s_state.elapsed_time, HIGH_RATE_TIMEOUT_S);
+        if (is_short_stopwatch) {
+            high_rate_timeout_ms = (uint32_t) MAX(HIGH_RATE_TIMEOUT_MS,
+                                                  ((int32_t)SHORT_STOPWATCH_S - (int32_t)s_state.elapsed_time) * MS_PER_S);
+        } else if (alarm_is_pulsing()){
+            high_rate_timeout_ms = (uint32_t) MAX(HIGH_RATE_TIMEOUT_MS,
+                                                  ABSDIFF(alarm_get_pulse_end_time(), time(NULL)) * MS_PER_S);
         } else {
-            high_rate_timeout_s = HIGH_RATE_TIMEOUT_S;
+            high_rate_timeout_ms = HIGH_RATE_TIMEOUT_MS;
         }
-        const uint32_t high_rate_timeout_ms = (uint32_t) (high_rate_timeout_s * MS_PER_S);
+
         if (update_rate_timer == NULL) {
             update_rate_timer = app_timer_register(high_rate_timeout_ms, update_rate_timer_callback, NULL);
         } else {
             app_timer_reschedule(update_rate_timer, high_rate_timeout_ms);
         }
-    } else {  // the only thing that calls this function with MINUTE_UNIT is the timer, so it has expired
-        // TODO set to minute update while paused?
-        update_rate_timer = NULL;
+        LOG("Scheduled update rate reduction in %ums", high_rate_timeout_ms);
+    } else {
+        if (update_rate_timer != NULL) {
+            LOG("Unscheduled update rate reduction");
+            app_timer_cancel(update_rate_timer);
+            update_rate_timer = NULL;
+        }
     }
-
 }
 
-// Timer callback which reduces the rate of tick_handler to 1minute after its timer expires
+// Timer callback which reduces the rate of tick_handler to MINUTE_UNIT after its timer expires
 static void update_rate_timer_callback(void* data) {
     TRACE("update_rate_timer_callback");
     update_tick_subscription(MINUTE_UNIT);
@@ -765,8 +823,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
         }
         // toggle both on entry to and during MODE_CTRL
         if (s_mode == MODE_CTRL) {
-            vibe_for_start_stop();
-            stopwatch_toggle();
+            do_toggle_pause();
         }
         update_action_bar();
     }
@@ -992,11 +1049,6 @@ static void main_window_load(Window *window) {
     // status_bar_layer_set_colors(s_status_bar, GColorBlack, GColorWhite);
     // status_bar_layer_set_separator_mode(s_status_bar, StatusBarLayerSeparatorModeDotted);
 
-    // services
-    update_tick_subscription(SECOND_UNIT);
-    accel_tap_service_subscribe(accel_tap_handler);
-    battery_state_service_subscribe(battery_state_handler);
-
     // business logic
     s_initialising = true;
     if (stopwatch_load()) {
@@ -1013,8 +1065,13 @@ static void main_window_load(Window *window) {
     if (launch_reason() == APP_LAUNCH_WAKEUP) {
         alarm_start();
     }
-    tick_handler(NULL, 0);
     alarm_cancel_any_wakeup();
+
+    // services
+    update_tick_subscription(SECOND_UNIT);
+    accel_tap_service_subscribe(accel_tap_handler);
+    battery_state_service_subscribe(battery_state_handler);
+
     s_initialising = false;
 }
 
