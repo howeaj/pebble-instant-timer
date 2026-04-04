@@ -82,7 +82,13 @@
         {
           "type": "raw",
           "name": "BELL",
-          "file": "images/bell.pdc"
+          "file": "images/bell.pdc",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery",
+            "gabbro"
+          ]
         }
       ]
     }

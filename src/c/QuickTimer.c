@@ -2,7 +2,6 @@
     TODO
         - bell icon
             - rotation animation
-            - support smaller screens
         - reduce action bar icon size on chalk
         - repeat alarm on each time round?
         - timeline pin
@@ -1010,7 +1009,9 @@ static void main_window_load(Window *window) {
     Layer *window_layer = window_get_root_layer(window);
 
     // background
+#if PBL_COLOR
     s_icon_bell = gdraw_command_image_create_with_resource(RESOURCE_ID_BELL);
+#endif // PBL_COLOR
     s_bg_layer = layer_create(reduce_frame_for_system_bars(layer_get_frame(window_layer)));
     layer_set_update_proc(s_bg_layer, render_background);
     layer_add_child(window_layer, s_bg_layer);
@@ -1076,7 +1077,9 @@ static void main_window_unload(Window *window) {
 #endif // !PBL_PLATFORM_APLITE
 
     // background
+#if PBL_COLOR
     gdraw_command_image_destroy(s_icon_bell);
+#endif // PBL_COLOR
     layer_destroy(s_bg_layer);
 
     // alarm icon
