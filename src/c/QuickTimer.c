@@ -3,7 +3,6 @@
         - bell icon
             - rotation animation
             - support smaller screens
-        - make pause bigger on rect
         - reduce action bar icon size on chalk
         - repeat alarm on each time round?
         - timeline pin
@@ -863,7 +862,7 @@ static void click_config_provider(void *context) {
 #define BG_COLOR_PAUSED GColorBulgarianRose
 
 #if PBL_COLOR
-static void draw_bell_icon(GPoint centre, GContext *ctx) {
+static void draw_bell_background(GPoint centre, GContext *ctx) {
     const GSize size = gdraw_command_image_get_bounds_size(s_icon_bell);
     const GPoint origin = {
         centre.x - (size.w / 2),
@@ -872,12 +871,22 @@ static void draw_bell_icon(GPoint centre, GContext *ctx) {
     graphics_context_set_fill_color(ctx, BG_COLOR_PAUSED);
     gdraw_command_image_draw(ctx, s_icon_bell, origin);
 }
+
+static void draw_pause_background(GPoint centre, int16_t central_panel_radius, GContext *ctx) {
+    // the size of one pause rect
+    const GSize pause_size = {central_panel_radius / 2.5, central_panel_radius * 1.5};
+    graphics_context_set_fill_color(ctx, BG_COLOR_PAUSED);
+    GPoint pause_origin = {centre.x - (pause_size.w * 1.5), centre.y - (pause_size.h / 2)};
+    graphics_fill_rect(ctx, (GRect){.origin=pause_origin, .size=pause_size}, 2, GCornersAll);
+    pause_origin.x += pause_size.w * 2;
+    graphics_fill_rect(ctx, (GRect){.origin=pause_origin, .size=pause_size}, 2, GCornersAll);
+}
 #endif // PBL_COLOR
 
 static void render_background(Layer *layer, GContext *ctx) {
     const GRect bounds = layer_get_bounds(layer);
-    const int16_t central_panel_radius = (bounds.size.w * 0.38);
-    const uint16_t ring_thickness = (uint16_t) ((bounds.size.w / 2) - central_panel_radius);
+    const int16_t central_panel_radius = (bounds.size.h * 0.38);
+    const uint16_t ring_thickness = (uint16_t) ((bounds.size.h / 2) - central_panel_radius);
     const bool is_overtime = s_state.alarm_duration && (s_state.elapsed_time >= s_state.alarm_duration);
 
     // background
@@ -902,15 +911,10 @@ static void render_background(Layer *layer, GContext *ctx) {
     const GPoint centre = grect_center_point(&bounds);
     // pause symbol
     if (!s_state.is_counting) {
-        const GSize pause_size = {central_panel_radius / 2.5, central_panel_radius * 1.5};
-        graphics_context_set_fill_color(ctx, BG_COLOR_PAUSED);
-        GPoint pause_origin = {centre.x - (pause_size.w * 1.5), centre.y - (pause_size.h / 2)};
-        graphics_fill_rect(ctx, (GRect){.origin=pause_origin, .size=pause_size}, 2, GCornersAll);
-        pause_origin.x += pause_size.w * 2;
-        graphics_fill_rect(ctx, (GRect){.origin=pause_origin, .size=pause_size}, 2, GCornersAll);
+        draw_pause_background(centre, central_panel_radius, ctx);
     }
     else if (alarm_is_pulsing()) {
-        draw_bell_icon(centre, ctx);
+        draw_bell_background(centre, ctx);
     }
 #endif // PBL_COLOR
 }
