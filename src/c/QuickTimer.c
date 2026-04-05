@@ -1,6 +1,5 @@
 /*
     TODO
-        - allow choosing between 5 and 1-minute intervals
         - bell icon
             - rotation animation
             - fix misshapen ensmallened versions
@@ -82,16 +81,18 @@ static GBitmap* s_icon_save;
 
 typedef enum IncrementMode_e {
     INCR_HOURS = 0,
-    INCR_MINS  = 1,
-    INCR_SECS  = 2
+    INCR_5MINS = 1,
+    INCR_MINS  = 2,
+    INCR_SECS  = 3
 } IncrementMode;
 
 // mode state
 #define MODE_EXIT  (-1)
 #define MODE_HOURS INCR_HOURS
+#define MODE_5MINS INCR_5MINS
 #define MODE_MINS  INCR_MINS
 #define MODE_SECS  INCR_SECS
-#define MODE_CTRL  (3)
+#define MODE_CTRL  (4)
 #define MODE_MAX MODE_CTRL
 static int32_t s_mode = MODE_HOURS;
 
@@ -299,6 +300,9 @@ static time_t get_alarm_increment_diff(const IncrementMode incr, const bool add)
         case INCR_HOURS:
             change = MAX(SECONDS_PER_HOUR, change);
             break;
+        case INCR_5MINS:
+            change = MAX(5 * SECONDS_PER_MINUTE, change);
+            break;
         case INCR_MINS:
             change = MAX(SECONDS_PER_MINUTE, change);
             break;
@@ -321,8 +325,11 @@ static void increment_alarm(const IncrementMode incr, const bool add, const bool
                 case INCR_HOURS:
                     s_state.alarm_duration = 8 * SECONDS_PER_HOUR;
                     break;
-                case INCR_MINS:
+                case INCR_5MINS:
                     s_state.alarm_duration = 55 * SECONDS_PER_MINUTE;
+                    break;
+                case INCR_MINS:
+                    s_state.alarm_duration = 30 * SECONDS_PER_MINUTE;
                     break;
                 case INCR_SECS:
                     s_state.alarm_duration = 45;
@@ -342,10 +349,17 @@ static void increment_alarm(const IncrementMode incr, const bool add, const bool
 /// Return the next mode that would be reached via increment (add=True) or decrement (add=False)
 static int get_next_mode(const bool add) {
     int next_mode = s_mode + (add ? 1 : -1);
+    const time_t incr_diff = get_alarm_increment_diff((IncrementMode)next_mode, false);
 
-    // Skip secs selection if the alarm duration is beyond the secs modification threshold
-    if ((next_mode == MODE_SECS) && (get_alarm_increment_diff((IncrementMode)next_mode, false) >= SECONDS_PER_MINUTE)){
-        next_mode += (add ? 1 : -1);
+    // Skip selection if the alarm duration is beyond that modification threshold
+    if ((next_mode == MODE_MINS) && (incr_diff > SECONDS_PER_MINUTE)){
+        next_mode += (add ? 2 : -2);
+    } else if ((next_mode == MODE_SECS) && (incr_diff >= SECONDS_PER_MINUTE)){
+        if (incr_diff > SECONDS_PER_MINUTE) {
+            next_mode += (add ? 2 : -2);
+        } else {
+            next_mode += (add ? 1 : -1);
+        }
     }
 
     return MIN(next_mode, MODE_MAX);
@@ -568,8 +582,12 @@ static void update_mode(void) {
             text = two_digit_hours ? "^^" : "^";
             frame.origin.x = has_days ? -19 : -26;
             break;
-        case MODE_MINS:
+        case MODE_5MINS:
             frame.origin.x = has_days ? 2 : two_digit_hours ? -5 : -9;
+            break;
+        case MODE_MINS:
+            text = "^";
+            frame.origin.x = has_days ? 6 : two_digit_hours ? -1 : -5;
             break;
         case MODE_SECS:
             frame.origin.x = 16;

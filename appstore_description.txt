@@ -28,7 +28,7 @@ Features:
             - 1min increments until 30 minutes
             - 30 second increments until 5 minutes
             - 15 second increments until 2 minutes
-            - Press down from 0 to jump to 8 hours for a good night's sleep
+            - Press down from 0 to jump to the max value for that unit (or 8 hours for a good night's sleep)
     - Battery saving:
         - Automatically switches to per-minute updates while you probably aren't looking
             - Activity is detected by button press, tap/shake and connected/disconnected from charger)
