@@ -59,6 +59,11 @@
         },
         {
           "type": "bitmap",
+          "name": "ICON_SAVE",
+          "file": "images/action_bar_save.png"
+        },
+        {
+          "type": "bitmap",
           "name": "ICON_START",
           "file": "images/action_bar_start.png"
         },

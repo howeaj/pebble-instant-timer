@@ -1,13 +1,12 @@
 /*
     TODO
-        - exit screen
-        - redo controls to match latest description
         - allow choosing between 5 and 1-minute intervals
         - squareify the ring for rect displays
         - bell icon
             - rotation animation
             - fix misshapen ensmallened versions
         - reduce action bar icon size on chalk
+        - animate transition between stopwatch/timer mode
         - repeat alarm on each time round?
         - timeline pin
         - obey system "content size" setting?
@@ -77,6 +76,7 @@ static GBitmap* s_icon_pause;
 static GBitmap* s_icon_start;
 static GBitmap* s_icon_delete;
 static GBitmap* s_icon_refresh;
+static GBitmap* s_icon_save;
 #if PBL_RECT
     static GBitmap* s_icon_tick;
 #endif // PBL_RECT
@@ -116,6 +116,7 @@ State_t s_state = {
 };
 
 // state that doesn't need persistence
+static bool s_save = true;  // whether to save on exit
 static bool s_initialising = true;
 static TimeUnits s_update_rate = YEAR_UNIT;
 
@@ -350,7 +351,7 @@ static void increment_mode(const bool add) {
 #define ALARM_PULSE_DURATION SECONDS_PER_MINUTE  // how long the alarm will ring before automatically stopping
 static AppTimer* s_alarm_pulse_timer = NULL;
 
-/// Return true if an alarm was active
+/// Return true if an alarm was pulsing
 static bool alarm_clear(void) {
     const bool was_active = s_alarm_pulse_timer != NULL;
     if (was_active) {
@@ -465,6 +466,13 @@ static void update_action_bar(void) {
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveLeft);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
+    } else if (s_mode == MODE_EXIT) {
+        action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_save, true);
+        action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, s_icon_right, true);
+        action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_delete, true);
+        action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
+        action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveRight);
+        action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
     } else {
         const GBitmap* icon_mode = (get_next_mode(true) == MODE_CTRL ? icon_toggle : s_icon_right);
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_up, true);
@@ -556,6 +564,10 @@ static void update_mode(void) {
         case MODE_CTRL:
             frame.origin.x = 150;
             break;
+        case MODE_EXIT:
+            text = two_digit_hours ? "^^" : "^";
+            frame.origin.x = -150;
+            break;
         default:
             ASSERT(false);
             break;
@@ -619,7 +631,7 @@ void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void 
             ASSERT(result == APP_GLANCE_RESULT_SUCCESS); \
         MACRO_END
 
-    if (s_state.is_counting) {
+    if (s_save && s_state.is_counting) {
         if (s_state.alarm_duration > 0) {
             const time_t alarm_time = s_state.start_time + s_state.alarm_duration;
             snprintf_time(subtitle, sizeof(subtitle), "Alarm expired at %s", alarm_time);
@@ -682,6 +694,11 @@ static bool do_alarm_clear(void) {
         toggle_action_bar(true);
     }
     return cleared;
+}
+
+static void do_exit(bool save) {
+    s_save = save;
+    window_stack_pop(true);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -794,11 +811,24 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("up_click_handler");
+    static bool prevent_increment_until_release = false;
     if (!do_alarm_clear()) {
         if (s_mode == MODE_CTRL) {
-            do_restart();
+            if (click_recognizer_is_repeating(recognizer)) {
+                prevent_increment_until_release = true;
+                do_clear();
+            } else {
+                do_restart();
+            }
+        } else if (s_mode == MODE_EXIT) {
+            do_exit(true);
         } else {
-            do_increment(true, recognizer);
+            if (prevent_increment_until_release && !click_recognizer_is_repeating(recognizer)) {
+                prevent_increment_until_release = false;
+            }
+            if (!prevent_increment_until_release) {
+                do_increment(true, recognizer);
+            }
         }
     }
     update_tick_subscription(SECOND_UNIT);
@@ -807,8 +837,8 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("down_click_handler");
     if (!do_alarm_clear()) {
-        if (s_mode == MODE_CTRL) {
-            do_clear();
+        if ((s_mode == MODE_CTRL) || (s_mode == MODE_EXIT)) {
+            do_exit(false);
         } else {
             do_increment(false, recognizer);
         }
@@ -835,7 +865,10 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("select_long_click_handler");
     if (!do_alarm_clear()) {
-        do_clear();
+        s_mode = MODE_CTRL;
+        update_mode();
+        do_toggle_pause();
+        update_action_bar();
     }
     update_tick_subscription(SECOND_UNIT);
 }
@@ -844,8 +877,7 @@ static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("back_click_handler");
     if (!do_alarm_clear()) {
         increment_mode(false);
-        if (s_mode == MODE_EXIT) {
-            LOG("Back click - exit");
+        if (s_mode < MODE_EXIT) {
             window_stack_pop(true);
         } else {
             update_mode();
@@ -1044,6 +1076,7 @@ static void main_window_load(Window *window) {
     s_icon_start = gbitmap_create_with_resource(RESOURCE_ID_ICON_START);
     s_icon_pause = gbitmap_create_with_resource(RESOURCE_ID_ICON_PAUSE);
     s_icon_delete = gbitmap_create_with_resource(RESOURCE_ID_ICON_DELETE);
+    s_icon_save = gbitmap_create_with_resource(RESOURCE_ID_ICON_SAVE);
 #if PBL_RECT
     s_icon_tick = gbitmap_create_with_resource(RESOURCE_ID_ICON_TICK);
 #endif // PBL_RECT
@@ -1083,10 +1116,6 @@ static void main_window_load(Window *window) {
 static void main_window_unload(Window *window) {
     TRACE("main_window_unload");
 
-#if !PBL_PLATFORM_APLITE
-    app_glance_reload(glance_reload_callback, NULL);
-#endif // !PBL_PLATFORM_APLITE
-
     // background
 #if PBL_COLOR
     gdraw_command_image_destroy(s_icon_bell);
@@ -1118,6 +1147,7 @@ static void main_window_unload(Window *window) {
     gbitmap_destroy(s_icon_start);
     gbitmap_destroy(s_icon_pause);
     gbitmap_destroy(s_icon_delete);
+    gbitmap_destroy(s_icon_save);
 #if PBL_RECT
     gbitmap_destroy(s_icon_tick);
 #endif // PBL_RECT
@@ -1134,9 +1164,13 @@ static void main_window_unload(Window *window) {
     if (!alarm_clear()){
         alarm_schedule_any_wakeup();
     }
-    if (s_state.is_counting) {
+    if (s_save) {
         stopwatch_save();
     }
+
+#if !PBL_PLATFORM_APLITE
+    app_glance_reload(glance_reload_callback, NULL);
+#endif // !PBL_PLATFORM_APLITE
 }
 
 static void init(void) {
