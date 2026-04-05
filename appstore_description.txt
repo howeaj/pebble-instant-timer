@@ -1,0 +1,71 @@
+A polished single timecounter which works as a combined timer, alarm and stopwatch simultaneously.
+
+This is designed to be bound to a quick-access button and used at a moment's notice with minimal interaction to set everyday timers for cooking, reminders and alarm clocks.
+
+No other app on pebble (or any other phone or watch as far as I can tell!) has the functionality here that I wanted, so I had to make it myself!
+Though deceptively simple, this packs in a lot of detail to make it worthy of an app I use multiple times per day, every day.
+
+Use this app if you want:
+    - Instantly set a stopwatch/timer running without looking in the middle of cooking, and then change it as you go along
+    - Often quickly set an alarm to remind you about something in the near future
+    - Quickly set a wakeup alarm at a varying time just before you go to sleep
+    - Dismiss alarms or start/stop counting without looking
+
+Use a different app if you want:
+    - Run more than one alarm/timer/stopwatch at once
+    - Set timer for precisely 7 minutes and 42 seconds, or an alarm for precisely 14:31
+    - Set an alarm that automatically repeats daily/weekly
+    - Millisecond precision
+    - Sports-stopwatch split times / lap times
+
+Features:
+    - Unique to this app:
+        - One-press operation; starts counting immediately upon opening the app.
+        - Always simultaneously shows the original timer duration, elapsed time, remaining time and alarm time.
+        - Modify the timer duration / alarm time at any point without having to pause, restart or confirm.
+        - Timer modification controls optimised for speed (skips smaller increments as duration grows):
+            - 1hour or 5min increments by default
+            - 1min increments until 30 minutes
+            - 30 second increments until 5 minutes
+            - 15 second increments until 2 minutes
+            - Press down from 0 to jump to 8 hours for a good night's sleep
+    - Battery saving:
+        - Automatically switches to per-minute updates while you probably aren't looking
+            - Activity is detected by button press, tap/shake and connected/disconnected from charger)
+            - Also considered active during alarm activation and for first 1 minute of stopwatch or whenever the timer/alarm duration is below 2 minutes.
+        - Uses no power when running in background (no background worker, Wakeup API for alarm)
+        - Automatically stops alarm vibration after 1 minute
+    - Other basics:
+        Keeps counting overtime after the timer/alarm elapses.
+        Short vibrate on start/stop for operation without looking.
+        Keeps counting when the app is closed; automatically reopens when timer/alarm elapsed.
+        Alarm time or start time shown in app menu "glance" subtitle.
+        Obeys 12-hour vs 24-hour setting
+        Alarm icon shows when an alarm is set (which will trigger even if the app is closed)
+        Animated selection cursor and looping remaining time / overtime ring
+        Supports all pebble platforms
+
+Future updates:
+    Two-swipe touch controls for even faster alarm/timer setting (I'll implement this as soon as a touch screen API is available!)
+    Touch screen detected as activity to show seconds (again, waiting for the touch API)
+    User configuration to set colours and any other preference.
+
+Controls:
+    - Select/Back to choose which timer digit(s) to modify. Note the available digits change as the duration increases.
+    - Up/Down to increment/decrement. Hold to repeat. Press down at 0 to wrap up.
+    - Select Long-press (or press while action bar shows the play/pause symbol) to toggle pause/resume and enter "control mode":
+        - Up (rewind icon) to restart the timer (i.e. set elapsed time to 0) while keeping the timer/alarm duration
+        - Up Long-press to reset the entire app to 0
+        - Select (play/pause icon) to pause/resume counting
+        - Down (X icon) to discard timer and exit the app
+        - Back to return to timer modification
+    - Back while at the highest digit to exit with options:
+        - Up/Back (save icon) to save and exit
+        - Down (X icon) to discard timer and exit the app
+        - Select (> icon) to return to timer modification
+    - Back Long-press to save and exit
+    - When alarm goes off, any button to dismiss it
+
+This is based on an unreleased WearOS app I made just for myself for an old android smartwatch years ago, now redesigned and polished for release on pebble.
+
+If anybody wants to use this app but-for-one-tiny-detail I'm very happy to implement user configuration to accommodate; just open a thread on github.

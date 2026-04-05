@@ -1,10 +1,13 @@
 /*
     TODO
+        - exit screen
+        - redo controls to match latest description
+        - allow choosing between 5 and 1-minute intervals
+        - squareify the ring for rect displays
         - bell icon
-            - fix misshapen ensmallened versions
             - rotation animation
+            - fix misshapen ensmallened versions
         - reduce action bar icon size on chalk
-        - redo the core alarm increment logic
         - repeat alarm on each time round?
         - timeline pin
         - obey system "content size" setting?
