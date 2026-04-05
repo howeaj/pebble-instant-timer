@@ -1,7 +1,6 @@
 /*
     TODO
         - allow choosing between 5 and 1-minute intervals
-        - squareify the ring for rect displays
         - bell icon
             - rotation animation
             - fix misshapen ensmallened versions
@@ -176,6 +175,20 @@ GRect reduce_frame_for_system_bars(const GRect frame) {
         }
     };
 #endif // PBL_RECT
+}
+
+// quake 3 sqrt
+float fast_sqrt(const float x)
+{
+    const float xhalf = 0.5f * x;
+    union
+    {
+        float x;
+        int i;
+    } u;
+    u.x = x;
+    u.i = 0x5f3759df - (u.i >> 1);  // initial guess
+    return x * u.x * (1.5f - xhalf * u.x * u.x);  // Newton step
 }
 
 
@@ -927,7 +940,7 @@ static void draw_pause_background(GPoint centre, int16_t central_panel_radius, G
 
 static void render_background(Layer *layer, GContext *ctx) {
     const GRect bounds = layer_get_bounds(layer);
-    const int16_t central_panel_radius = (bounds.size.h * 0.38);
+    const int16_t central_panel_radius = (bounds.size.h * (bounds.size.h > 160 ? 0.38: 0.45));
     const uint16_t ring_thickness = (uint16_t) ((bounds.size.h / 2) - central_panel_radius);
     const bool is_overtime = s_state.alarm_duration && (s_state.elapsed_time >= s_state.alarm_duration);
 
@@ -937,17 +950,42 @@ static void render_background(Layer *layer, GContext *ctx) {
 
     // ring background
     graphics_context_set_fill_color(ctx, is_overtime ? EMPTY_RING_COLOR : REMAINING_COLOR);
+#if PBL_ROUND
     graphics_fill_radial(ctx, bounds, GOvalScaleModeFillCircle, ring_thickness, DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
+    const GRect ring_bounds = bounds;
+#else // PBL_RECT
+    const uint16_t corner_radius = 10;
+    graphics_fill_rect(ctx, bounds, corner_radius, GCornersAll);
+    const GSize size = {
+        bounds.size.w,
+        (int16_t)fast_sqrt((bounds.size.h * bounds.size.h) + (bounds.size.w * bounds.size.w)) - (corner_radius - 3)
+    };
+    const GPoint ring_centre = grect_center_point(&bounds);
+    const GRect ring_bounds = {
+        .origin = {ring_centre.x - (size.w / 2), ring_centre.y - (size.h / 2)},
+        .size = size
+    };
+#endif // PBL_RECT
 
     // ring foreground
     if (s_state.alarm_duration) {
         graphics_context_set_fill_color(ctx, is_overtime ? OVERTIME_COLOR : EMPTY_RING_COLOR);
-        graphics_fill_radial(ctx, bounds, GOvalScaleModeFillCircle,
-            ring_thickness,
+        graphics_fill_radial(ctx, ring_bounds, GOvalScaleModeFillCircle,
+            PBL_IF_ROUND_ELSE(ring_thickness, bounds.size.h),
             DEG_TO_TRIGANGLE(0),
             (TRIG_MAX_ANGLE * s_state.elapsed_time / s_state.alarm_duration) % (TRIG_MAX_ANGLE + 1)
         );
     }
+
+#if PBL_RECT
+    // central panel
+    graphics_context_set_fill_color(ctx, BG_COLOR);
+    const GRect central_panel_rect = {
+        .origin = {ring_thickness, ring_thickness},
+        .size = {bounds.size.w - (ring_thickness * 2), central_panel_radius * 2}
+    };
+    graphics_fill_rect(ctx, central_panel_rect, corner_radius, GCornersAll);
+#endif // PBL_RECT
 
 #if PBL_COLOR
     const GPoint centre = grect_center_point(&bounds);
