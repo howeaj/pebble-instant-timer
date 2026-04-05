@@ -1,8 +1,10 @@
 /*
     TODO
         - bell icon
+            - fix misshapen ensmallened versions
             - rotation animation
         - reduce action bar icon size on chalk
+        - redo the core alarm increment logic
         - repeat alarm on each time round?
         - timeline pin
         - obey system "content size" setting?
@@ -20,27 +22,20 @@
         - touchscreen control
             - fast timer/alarm setting
             - treat as activity for update_tick_subscription
+        - investigate https://github.com/pebble-hacks/pebble_glancing_demo/blob/master/src/glancing_api.h
 */
 
 #include <pebble.h>
 #include <stdio.h>
 #include <time.h>
 
-#define MACRO_START do {
-#define MACRO_END } while (0)
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
-#define ABS(a) (((a) >= 0) ? (a) : ((a) * -1))
-#define ABSDIFF(a, b) ((a) >= (b) ? (a) - (b) : (b) - (a))
-#define LOG(...) APP_LOG(APP_LOG_LEVEL_INFO, __VA_ARGS__)
-#define TRACE(...) APP_LOG(APP_LOG_LEVEL_DEBUG, __VA_ARGS__)
-#define ASSERT(condition) if (!(condition)) APP_LOG(APP_LOG_LEVEL_ERROR, "ASSERTION FAILED AT %s:%d - "#condition, __FILE__, __LINE__)
-#define TIME_MAX INT32_MAX  // maximum storeable value of time_t
-#define MS_PER_S (1000)
+#define DEBUG 1  // TODO disable for release
+#include "Macros.h"
+
 
 #define LONG_CLICK_DURATION (500)  // duration for long click events
-#define DEFAULT_BACKLIGHT_TIMEOUT_MS 3000  // The system timeout for the backlight after activity, from prefs.h
-#define LIGHT_FADE_TIME_MS 500  // The system duration for backlight fade, from light.c
+#define DEFAULT_BACKLIGHT_TIMEOUT_MS (3000)  // The system timeout for the backlight after activity, from prefs.h
+#define LIGHT_FADE_TIME_MS (500)  // The system duration for backlight fade, from light.c
 
 
 static Window *s_main_window;
@@ -50,7 +45,9 @@ static Layer* s_bg_layer;
 static Layer* s_duration_layer;
 static PropertyAnimation* s_edit_indicator_animation;
 
-static GDrawCommandImage* s_icon_bell;
+#if PBL_COLOR
+    static GDrawCommandImage* s_icon_bell;
+#endif // PBL_COLOR
 
 static BitmapLayer* s_alarm_icon_layer;
 static GBitmap* s_icon_alarm;
@@ -96,7 +93,7 @@ typedef enum IncrementMode_e {
 #define MODE_MAX MODE_CTRL
 static int32_t s_mode = MODE_HOURS;
 
-// app state
+// app state that needs persistence
 // affects PERSIST_VERSION
 typedef struct State_s {
     time_t alarm_duration;
@@ -115,12 +112,17 @@ State_t s_state = {
     .alarm_wakeup_id = E_DOES_NOT_EXIST
 };
 
+// state that doesn't need persistence
 static bool s_initialising = true;
 static TimeUnits s_update_rate = YEAR_UNIT;
 
 
+/******************************************************************************
+ Generic-ish functions
+******************************************************************************/
+
 /// Format `seconds` into a `buffer` of `size` as hours, minutes, seconds
-/// `truncate` to exclude unused units
+/// `truncate` to exclude unused larger units
 /// `show_s` to show seconds unit
 static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate, bool show_s) {
     const char* neg = seconds < 0 ? "-" : "";
@@ -132,7 +134,7 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
         // TODO I wish this font was fixed-width; use ...
         const char* fmt = show_s ? "%s%dh%02dm%02ds" : "%s%dh%02dm......";
         snprintf(buffer, size, fmt, neg, h, m, s);
-    } else if (m || (s_update_rate == MINUTE_UNIT)) {
+    } else if (m || (s_update_rate == MINUTE_UNIT)) {  // TODO remove use of s_update_rate
         const char* fmt = show_s ? "%s%dm%02ds" : "%s%dm......";
         snprintf(buffer, size, fmt, neg, m, s);
     } else {
