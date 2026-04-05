@@ -86,8 +86,19 @@
         },
         {
           "type": "raw",
-          "name": "BELL",
-          "file": "images/bell.pdc",
+          "name": "BELL_L",
+          "file": "images/bell_left.pdc",
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery",
+            "gabbro"
+          ]
+        },
+        {
+          "type": "raw",
+          "name": "BELL_R",
+          "file": "images/bell_right.pdc",
           "targetPlatforms": [
             "basalt",
             "chalk",

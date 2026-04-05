@@ -1,8 +1,5 @@
 /*
     TODO
-        - bell icon
-            - rotation animation
-            - fix misshapen ensmallened versions
         - reduce action bar icon size on chalk
         - animate transition between stopwatch/timer mode
         - repeat alarm on each time round?
@@ -47,6 +44,8 @@ static PropertyAnimation* s_edit_indicator_animation;
 
 #if PBL_COLOR
     static GDrawCommandImage* s_icon_bell;
+    static GDrawCommandImage* s_icon_bell_l;
+    static GDrawCommandImage* s_icon_bell_r;
 #endif // PBL_COLOR
 
 static BitmapLayer* s_alarm_icon_layer;
@@ -745,7 +744,10 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
         update_alarm_time();
     }
 
-    // TODO swap between two bell rotations
+#if PBL_COLOR
+    // swap between two bell rotations
+    s_icon_bell = (s_icon_bell == s_icon_bell_l) ? s_icon_bell_r : s_icon_bell_l;
+#endif // PBL_COLOR
 }
 
 static void update_rate_timer_callback(void* data);
@@ -1109,7 +1111,9 @@ static void main_window_load(Window *window) {
 
     // background
 #if PBL_COLOR
-    s_icon_bell = gdraw_command_image_create_with_resource(RESOURCE_ID_BELL);
+    s_icon_bell_l = gdraw_command_image_create_with_resource(RESOURCE_ID_BELL_L);
+    s_icon_bell_r = gdraw_command_image_create_with_resource(RESOURCE_ID_BELL_R);
+    s_icon_bell = s_icon_bell_l;
 #endif // PBL_COLOR
     s_bg_layer = layer_create(reduce_frame_for_system_bars(layer_get_frame(window_layer)));
     layer_set_update_proc(s_bg_layer, render_background);
@@ -1174,7 +1178,8 @@ static void main_window_unload(Window *window) {
 
     // background
 #if PBL_COLOR
-    gdraw_command_image_destroy(s_icon_bell);
+    gdraw_command_image_destroy(s_icon_bell_l);
+    gdraw_command_image_destroy(s_icon_bell_r);
 #endif // PBL_COLOR
     layer_destroy(s_bg_layer);
 
