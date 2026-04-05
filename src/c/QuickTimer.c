@@ -121,20 +121,24 @@ static TimeUnits s_update_rate = YEAR_UNIT;
  Generic-ish functions
 ******************************************************************************/
 
-/// Format `seconds` into a `buffer` of `size` as hours, minutes, seconds
-/// `truncate` to exclude unused larger units
+/// Format `seconds` into a `buffer` of `size` as days, hours, minutes, seconds
+/// `truncate_h` to exclude hours if 0 (days is always truncated if 0)
 /// `show_s` to show seconds unit
-static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate, bool show_s) {
+static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate_h, bool show_s) {
     const char* neg = seconds < 0 ? "-" : "";
     const int abs_seconds = ABS(seconds);
-    const int h = abs_seconds / SECONDS_PER_HOUR ;
+    const int d = abs_seconds / SECONDS_PER_DAY;
+    const int h = (abs_seconds % SECONDS_PER_DAY ) / SECONDS_PER_HOUR;
     const int m = (abs_seconds % SECONDS_PER_HOUR ) / SECONDS_PER_MINUTE;
     const int s = abs_seconds % SECONDS_PER_MINUTE;
-    if (h || !truncate) {
+    if (d) {
+        const char* fmt = show_s ? "%s%dd%02dh%02dm%02ds" : "%s%dd%02dh%02dm......";
+        snprintf(buffer, size, fmt, neg, d, h, m, s);
+    } else if (h || !truncate_h) {
         // TODO I wish this font was fixed-width; use ...
         const char* fmt = show_s ? "%s%dh%02dm%02ds" : "%s%dh%02dm......";
         snprintf(buffer, size, fmt, neg, h, m, s);
-    } else if (m || (s_update_rate == MINUTE_UNIT)) {  // TODO remove use of s_update_rate
+    } else if (m || (s_update_rate == MINUTE_UNIT)) {
         const char* fmt = show_s ? "%s%dm%02ds" : "%s%dm......";
         snprintf(buffer, size, fmt, neg, m, s);
     } else {
@@ -532,14 +536,16 @@ static void update_remaining(void) {
 static void update_mode(void) {
     const char* text = "^^";
     GRect frame = layer_get_frame((Layer*)s_text_layer_edit_indicator);
-    const bool large = s_state.alarm_duration >= 10 * 60 * 60;
+    const bool two_digit_hours = s_state.alarm_duration >= (10 * SECONDS_PER_HOUR);
+    const bool has_days = s_state.alarm_duration >= SECONDS_PER_DAY;
+    // note the character width is 7px
     switch (s_mode) {
         case MODE_HOURS:
-            text = large ? "^^" : "^";
-            frame.origin.x = -26;
+            text = two_digit_hours ? "^^" : "^";
+            frame.origin.x = has_days ? -19 : -26;
             break;
         case MODE_MINS:
-            frame.origin.x = large ? -5 : -9;
+            frame.origin.x = has_days ? 2 : two_digit_hours ? -5 : -9;
             break;
         case MODE_SECS:
             frame.origin.x = 16;
