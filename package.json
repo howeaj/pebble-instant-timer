@@ -1,13 +1,13 @@
 {
-  "name": "QuickTimer",
+  "name": "Instant Timer",
   "author": "howeaj",
   "version": "1.0.0",
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {},
   "pebble": {
-    "displayName": "QuickTimer",
-    "uuid": "3669feb3-299a-444a-a036-e10566a13e7c",
+    "displayName": "Instant Timer",
+    "uuid": "92860832-e162-49d5-bd89-81c92c0fe40c",
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [

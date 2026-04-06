@@ -1,7 +1,6 @@
 /*
     TODO
-        - obey system "content size" setting?
-        - font size on emery/gabbro too small?
+        - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
         - configuration via clay
             - all colours
             - palletize .pngs with ImageMagick
@@ -652,24 +651,35 @@ static void update_mode(void) {
             frame.origin.x += 10; \
         } \
     MACRO_END
+#if PBL_DISPLAY_HEIGHT >= 200
+    #define ADJUST_FOR_LARGE_FONT() MACRO_START \
+        frame.origin.x = (int16_t)((float)frame.origin.x) * (22.0 / 18.0); \
+    MACRO_END
+#else // PBL_DISPLAY_HEIGHT < 200
+    #define ADJUST_FOR_LARGE_FONT()
+#endif // PBL_DISPLAY_HEIGHT < 200
     // note the character width is 7px
     switch (s_mode) {
         case MODE_HOURS:
             text = two_digit_hours ? "^^" : "^";
             frame.origin.x = has_days ? -19 : -26;
             ADJUST_FOR_HIDDEN_SECONDS();
+            ADJUST_FOR_LARGE_FONT();
             break;
         case MODE_5MINS:
             frame.origin.x = has_days ? 2 : two_digit_hours ? -5 : -9;
             ADJUST_FOR_HIDDEN_SECONDS();
+            ADJUST_FOR_LARGE_FONT();
             break;
         case MODE_MINS:
             text = "^";
             frame.origin.x = has_days ? 6 : two_digit_hours ? -1 : -5;
             ADJUST_FOR_HIDDEN_SECONDS();
+            ADJUST_FOR_LARGE_FONT();
             break;
         case MODE_SECS:
             frame.origin.x = 16;
+            ADJUST_FOR_LARGE_FONT();
             break;
         case MODE_CTRL:
             frame.origin.x = 150;
@@ -1129,8 +1139,14 @@ static void create_alarm_icon(Layer* parent, int16_t alarm_text_y) {
 static void create_text_layout(Layer* parent) {
     const GRect bounds = layer_get_bounds(parent);
 
+#if PBL_DISPLAY_HEIGHT >= 200
+    const GFont small_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_24);
+    const int16_t small_text_h = 24;
+#else // PBL_DISPLAY_HEIGHT < 200
     const GFont small_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
     const int16_t small_text_h = 18;
+#endif  // PBL_DISPLAY_HEIGHT < 200
+
     const GFont main_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
     const int16_t main_text_h = 28;
 
@@ -1178,9 +1194,11 @@ static void create_text_layout(Layer* parent) {
     layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_edit_indicator));
 
     // primary text (elapsed or remaining)
+    const uint16_t border_w = 9;  // tweaked to get the desired auto-truncation on smallest screens
     #define BIG_TEXT(name); \
     MACRO_START \
-        s_text_layer_big_##name = text_layer_create(GRect(0, main_text_y, bounds.size.w, main_text_h)); \
+        s_text_layer_big_##name = text_layer_create( \
+            GRect(border_w, main_text_y, bounds.size.w - (border_w * 2), main_text_h)); \
         text_layer_set_text(s_text_layer_big_##name, s_##name##_text); \
         text_layer_set_text_alignment(s_text_layer_big_##name, GTextAlignmentCenter); \
         text_layer_set_font(s_text_layer_big_##name, main_text_font); \
