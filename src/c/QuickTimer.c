@@ -768,7 +768,7 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
     #define SHORT_STOPWATCH_S (60)
     static AppTimer* update_rate_timer = NULL;
 
-    const bool is_short_alarm = (s_state.alarm_duration < SHORT_ALARM_S);
+    const bool is_short_alarm = ((s_state.alarm_duration > 0) && (s_state.alarm_duration <= SHORT_ALARM_S));
 
     if (!s_state.is_counting) {
         // if paused, the only thing that can change is the alarm time, which only shows minutes
