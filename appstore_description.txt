@@ -21,7 +21,7 @@ Use a different app if you want:
 Features:
     - Unique to this app:
         - One-press operation; starts counting immediately upon opening the app.
-        - Always simultaneously shows the original timer duration, elapsed time, remaining time and alarm time.
+        - Always simultaneously shows the original timer duration, elapsed time, remaining time, alarm time and current time.
         - Modify the timer duration / alarm time at any point without having to pause, restart or confirm.
         - Timer modification controls optimised for speed (skips smaller increments as duration grows):
             - 1hour or 5min increments by default

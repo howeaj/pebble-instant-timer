@@ -1,6 +1,5 @@
 /*
     TODO
-        - reduce action bar icon size on chalk
         - animate transition between stopwatch/timer mode
         - repeat alarm on each time round?
         - timeline pin
@@ -20,6 +19,8 @@
             - fast timer/alarm setting
             - treat as activity for update_tick_subscription
         - investigate https://github.com/pebble-hacks/pebble_glancing_demo/blob/master/src/glancing_api.h
+        - fix caret_right (bottom is cut off)
+            - just edit these icons in raster
 */
 
 #include <pebble.h>
@@ -960,7 +961,13 @@ static void draw_pause_background(GPoint centre, int16_t central_panel_radius, G
 
 static void render_background(Layer *layer, GContext *ctx) {
     const GRect bounds = layer_get_bounds(layer);
+
+#if PBL_PLATFORM_CHALK  // ring is slightly wider to accommodate actionbar icons
+    const int16_t central_panel_radius = (bounds.size.h * 0.34);
+#else // !PBL_PLATFORM_CHALK
     const int16_t central_panel_radius = (bounds.size.h * (bounds.size.h > 160 ? 0.38: 0.45));
+#endif // PBL_PLATFORM_CHALK
+
     const uint16_t ring_thickness = (uint16_t) ((bounds.size.h / 2) - central_panel_radius);
     const bool is_overtime = s_state.alarm_duration && (s_state.elapsed_time >= s_state.alarm_duration);
 
@@ -1057,7 +1064,11 @@ static void create_text_layout(Layer* parent) {
     spacing = 5;
 #endif // PBL_DISPLAY_HEIGHT
 
-    const int16_t first_text_y = (bounds.size.h / 4) - spacing;
+    int16_t first_text_y = (bounds.size.h / 4) - spacing;
+#if PBL_PLATFORM_CHALK
+    first_text_y += 3;  // ring is slightly wider to accommodate actionbar icons
+#endif // PBL_PLATFORM_CHALK
+
     const int16_t second_text_y = first_text_y + small_text_h + spacing;
     const int16_t main_text_y = second_text_y + small_text_h + (spacing * 2);
 
