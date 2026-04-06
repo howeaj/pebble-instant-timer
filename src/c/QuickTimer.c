@@ -352,7 +352,7 @@ static int get_next_mode(const bool add) {
 
     // Skip selection if the alarm duration is beyond that modification threshold
     if ((next_mode == MODE_MINS) && (incr_diff > SECONDS_PER_MINUTE)){
-        next_mode += (add ? 2 : -2);
+        next_mode += (add ? 2 : s_mode == MODE_SECS ? -1 : -2);
     } else if ((next_mode == MODE_SECS) && (incr_diff >= SECONDS_PER_MINUTE)){
         if (incr_diff > SECONDS_PER_MINUTE) {
             next_mode += (add ? 2 : -2);
