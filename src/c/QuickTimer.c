@@ -1,6 +1,6 @@
 /*
     TODO
-        - animate transition between stopwatch/timer mode
+        - hide seconds duration when it is zero and we're beyond the edit threshold
         - obey system "content size" setting?
         - font size on emery/gabbro too small?
         - configuration via clay
@@ -55,8 +55,9 @@ static GBitmap* s_icon_alarm;
 static TextLayer *s_text_layer_edit_indicator;
 static TextLayer *s_text_layer_alarm_duration;
 static TextLayer *s_text_layer_alarm_time;
-static TextLayer *s_text_layer_primary;
-static TextLayer *s_text_layer_secondary;
+static TextLayer *s_text_layer_big_remaining;
+static TextLayer *s_text_layer_big_elapsed;
+static TextLayer *s_text_layer_small_elapsed;
 #define MAX_TEXT_SIZE (50)
 static char s_edit_indicator_text[MAX_TEXT_SIZE] = "^";
 static char s_alarm_duration_text[MAX_TEXT_SIZE] = "00h00m00s";
@@ -91,7 +92,7 @@ typedef enum IncrementMode_e {
 #define MODE_5MINS INCR_5MINS
 #define MODE_MINS  INCR_MINS
 #define MODE_SECS  INCR_SECS
-#define MODE_CTRL  (4)
+#define MODE_CTRL  MODE_SECS + 1
 #define MODE_MAX MODE_CTRL
 static int32_t s_mode = MODE_HOURS;
 
@@ -175,6 +176,35 @@ GRect reduce_frame_for_system_bars(const GRect frame) {
         }
     };
 #endif // PBL_RECT
+}
+
+/// Animate `layer` to `appear` or disappear by scrolling pixels vertically `from_below` or above.
+/// `was_visible` a pointer to a static bool; will be updated
+static void animate_scroll(Layer *layer, bool appear, bool from_below, bool* was_visible) {
+    const int16_t hide_offset = (from_below ? 1 : -1) * layer_get_bounds(layer).size.h;
+    GPoint hidden_point = GPoint(0, hide_offset);
+    GPoint zero = GPoint(0, 0);
+    GPoint *from = NULL;
+    GPoint *to = NULL;
+    if (appear) {
+        from = &hidden_point;
+        to = &zero;
+    } else {
+        // from wherever it currently is
+        to = &hidden_point;
+    }
+
+    if (s_initialising) {  // start in the correct location
+        GRect bounds = layer_get_bounds(layer);
+        bounds.origin = *to;
+        layer_set_bounds(layer, bounds);
+    } else if (appear != *was_visible) {
+        Animation *animation = (Animation *)property_animation_create_bounds_origin(layer, from, to);
+        animation_set_curve(animation, AnimationCurveLinear);
+        animation_set_duration(animation, 100);
+        animation_schedule(animation);
+    }
+    *was_visible = appear;
 }
 
 // quake 3 sqrt
@@ -308,7 +338,7 @@ static time_t get_alarm_increment_diff(const IncrementMode incr, const bool add)
         case INCR_SECS:
             break;
         default:
-            ASSERT(false);
+            ASSERT(false);  // TODO this gets hit sometimes
             break;
     }
     return change;
@@ -532,28 +562,38 @@ static void toggle_action_bar(bool visible) {
     }
 }
 
+// Update the primary large text and the secondary text below it
 static void update_primary_and_secondary_text(void) {
-    if (s_state.alarm_duration > 0) {
-        text_layer_set_text(s_text_layer_primary, s_remaining_text);
-        text_layer_set_text(s_text_layer_secondary, s_elapsed_text);
+    const bool is_timer_mode = s_state.alarm_duration == 0;
+    if (is_timer_mode) {
+        text_layer_set_text(s_text_layer_big_elapsed, s_elapsed_text);
     } else {
-        text_layer_set_text(s_text_layer_primary, s_elapsed_text);
-        text_layer_set_text(s_text_layer_secondary, "");
+        text_layer_set_text(s_text_layer_big_remaining, s_remaining_text);
+        text_layer_set_text(s_text_layer_small_elapsed, s_elapsed_text);
     }
+    static bool was_big_remaining_visible = false;
+    animate_scroll((Layer*)s_text_layer_big_remaining, !is_timer_mode, false, &was_big_remaining_visible);
+    static bool was_big_elapsed_visible = false;
+    animate_scroll((Layer*)s_text_layer_big_elapsed, is_timer_mode, true, &was_big_elapsed_visible);
+    static bool was_secondary_visible = false;
+    animate_scroll((Layer*)s_text_layer_small_elapsed, !is_timer_mode, false, &was_secondary_visible);
 }
 
 static void update_alarm_time(void) {
     // TRACE("update_alarm_time");
-    if (s_state.alarm_duration > 0) {
+    const bool show_alarm_time = s_state.alarm_duration > 0;
+    if (show_alarm_time) {
         const time_t alarm_time = time(NULL) + s_state.alarm_duration - s_state.elapsed_time;
         const struct tm* alarm_time_local = localtime(&alarm_time);
         const char* fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M%P";
         const size_t num_bytes = strftime(s_alarm_time_text, sizeof(s_alarm_time_text), fmt, alarm_time_local);
         ASSERT(num_bytes);
         text_layer_set_text(s_text_layer_alarm_time, s_alarm_time_text);
-    } else {
-        text_layer_set_text(s_text_layer_alarm_time, "");
     }
+
+    static bool was_show_alarm_time = false;
+    animate_scroll(text_layer_get_layer(s_text_layer_alarm_time), show_alarm_time, true, &was_show_alarm_time);
+
     update_primary_and_secondary_text();
     alarm_reset();
 }
@@ -566,7 +606,10 @@ static void update_remaining(void) {
         snprintf_hms(s_remaining_text, sizeof(s_remaining_text), remaining, true, should_show_seconds());
         show_alarm_icon = remaining > 0;
     }
-    layer_set_hidden(bitmap_layer_get_layer(s_alarm_icon_layer), !show_alarm_icon);
+
+    static bool was_show_alarm_icon = false;
+    animate_scroll(bitmap_layer_get_layer(s_alarm_icon_layer), show_alarm_icon, true, &was_show_alarm_icon);
+
     update_primary_and_secondary_text();
 }
 
@@ -606,6 +649,7 @@ static void update_mode(void) {
     text_layer_set_text(s_text_layer_edit_indicator, s_edit_indicator_text);
     // This is how to set it without animation: layer_set_frame((Layer*)s_text_layer_edit_indicator, frame);
     if (s_edit_indicator_animation != NULL){
+        // TODO is this necessary? I haven't bothered to do it for animate_scroll()...
         animation_unschedule(property_animation_get_animation(s_edit_indicator_animation));
         property_animation_destroy(s_edit_indicator_animation);
         s_edit_indicator_animation = NULL;
@@ -1098,19 +1142,27 @@ static void create_text_layout(Layer* parent) {
     layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_edit_indicator));
 
     // primary text (elapsed or remaining)
-    s_text_layer_primary = text_layer_create(GRect(0, main_text_y, bounds.size.w, main_text_h));
-    text_layer_set_text(s_text_layer_primary, s_elapsed_text);
-    text_layer_set_text_alignment(s_text_layer_primary, GTextAlignmentCenter);
-    text_layer_set_font(s_text_layer_primary, main_text_font);
-    text_layer_set_background_color(s_text_layer_primary, GColorClear);
-    text_layer_set_text_color(s_text_layer_primary, TEXT_COLOR);
-    layer_add_child(parent, text_layer_get_layer(s_text_layer_primary));
+    #define BIG_TEXT(name); \
+    MACRO_START \
+        s_text_layer_big_##name = text_layer_create(GRect(0, main_text_y, bounds.size.w, main_text_h)); \
+        text_layer_set_text(s_text_layer_big_##name, s_##name##_text); \
+        text_layer_set_text_alignment(s_text_layer_big_##name, GTextAlignmentCenter); \
+        text_layer_set_font(s_text_layer_big_##name, main_text_font); \
+        text_layer_set_background_color(s_text_layer_big_##name, GColorClear); \
+        text_layer_set_text_color(s_text_layer_big_##name, TEXT_COLOR); \
+        layer_add_child(parent, text_layer_get_layer(s_text_layer_big_##name)); \
+    MACRO_END
 
-    // secondary (elapsed or remaining)
-    #define s_secondary_text s_remaining_text
-    SMALL_TEXT(secondary, 0, main_text_y + main_text_h + spacing);
-    layer_add_child(parent, text_layer_get_layer(s_text_layer_secondary));
-    #undef s_secondary_text
+    // only one is shown at a time; update_primary_and_secondary_text() swaps between them
+    BIG_TEXT(elapsed);
+    BIG_TEXT(remaining);
+    #undef BIG_TEXT
+
+    // secondary text; elapsed while remaining is in the primary slot
+    #define s_small_elapsed_text s_elapsed_text
+    SMALL_TEXT(small_elapsed, 0, main_text_y + main_text_h + spacing);
+    layer_add_child(parent, text_layer_get_layer(s_text_layer_small_elapsed));
+    #undef s_small_elapsed_text
 
     #undef SMALL_TEXT
 }
@@ -1202,9 +1254,10 @@ static void main_window_unload(Window *window) {
     text_layer_destroy(s_text_layer_edit_indicator);
     text_layer_destroy(s_text_layer_alarm_duration);
     text_layer_destroy(s_text_layer_alarm_time);
-    text_layer_destroy(s_text_layer_primary);
-    text_layer_destroy(s_text_layer_secondary);
-    if (s_edit_indicator_animation != NULL) {
+    text_layer_destroy(s_text_layer_big_remaining);
+    text_layer_destroy(s_text_layer_big_elapsed);
+    text_layer_destroy(s_text_layer_small_elapsed);
+    if (s_edit_indicator_animation != NULL) { // TODO is this necessary?
         animation_unschedule(property_animation_get_animation(s_edit_indicator_animation));
         property_animation_destroy(s_edit_indicator_animation);
     }
