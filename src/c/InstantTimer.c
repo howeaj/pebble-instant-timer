@@ -38,7 +38,6 @@ static StatusBarLayer *s_status_bar;
 
 static Layer* s_bg_layer;
 static Layer* s_duration_layer;
-static PropertyAnimation* s_edit_indicator_animation;
 
 #if PBL_COLOR
     static GDrawCommandImage* s_icon_bell;
@@ -692,15 +691,8 @@ static void update_mode(void) {
     }
     snprintf(s_edit_indicator_text, sizeof(s_edit_indicator_text), text);
     text_layer_set_text(s_text_layer_edit_indicator, s_edit_indicator_text);
-    // This is how to set it without animation: layer_set_frame((Layer*)s_text_layer_edit_indicator, frame);
-    if (s_edit_indicator_animation != NULL){
-        // TODO is this necessary? I haven't bothered to do it for animate_scroll()...
-        animation_unschedule(property_animation_get_animation(s_edit_indicator_animation));
-        property_animation_destroy(s_edit_indicator_animation);
-        s_edit_indicator_animation = NULL;
-    }
-    s_edit_indicator_animation = property_animation_create_layer_frame((Layer*)s_text_layer_edit_indicator, NULL, &frame);
-    animation_schedule(property_animation_get_animation(s_edit_indicator_animation));
+    animation_schedule((Animation*)property_animation_create_layer_frame(
+        (Layer*)s_text_layer_edit_indicator, NULL, &frame));
 
     set_duration_text();
 }
@@ -1309,10 +1301,6 @@ static void main_window_unload(Window *window) {
     text_layer_destroy(s_text_layer_big_remaining);
     text_layer_destroy(s_text_layer_big_elapsed);
     text_layer_destroy(s_text_layer_small_elapsed);
-    if (s_edit_indicator_animation != NULL) { // TODO is this necessary?
-        animation_unschedule(property_animation_get_animation(s_edit_indicator_animation));
-        property_animation_destroy(s_edit_indicator_animation);
-    }
 
     // action bar
     action_bar_layer_destroy(s_action_bar);
