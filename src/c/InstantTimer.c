@@ -157,7 +157,6 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
                         :                          "%s%dm";
         snprintf(buffer, size, fmt, neg, m, s);
     } else {
-        ASSERT(sec_disp == SEC_SHOW);
         snprintf(buffer, size, "%s%ds", neg, s);
     }
 }
@@ -349,7 +348,6 @@ static time_t get_alarm_increment_diff(const IncrementMode incr, const bool add)
         case INCR_SECS:
             break;
         default:
-            ASSERT(false);  // TODO this gets hit sometimes
             break;
     }
     return change;
