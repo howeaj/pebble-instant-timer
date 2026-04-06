@@ -1,11 +1,11 @@
 /*
     TODO
         - animate transition between stopwatch/timer mode
-        - timeline pin
         - obey system "content size" setting?
+        - font size on emery/gabbro too small?
         - configuration via clay
             - all colours
-            - convert icons to .pdc or palletize with ImageMagick
+            - palletize .pngs with ImageMagick
                 convert myimage.png \
                     -adaptive-resize '144x168>' \
                     -fill '#FFFFFF00' -opaque none \
@@ -14,7 +14,6 @@
                     -define png:compression-level=9 -define png:compression-strategy=0 \
                     -define png:exclude-chunk=all \
                     myimage.pbl.png
-        - font size on emery/gabbro too small?
         - touchscreen control
             - fast timer/alarm setting
             - treat as activity for update_tick_subscription
