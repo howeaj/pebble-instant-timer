@@ -1,7 +1,6 @@
 /*
     TODO
         - animate transition between stopwatch/timer mode
-        - repeat alarm on each time round?
         - timeline pin
         - obey system "content size" setting?
         - configuration via clay
@@ -15,6 +14,7 @@
                     -define png:compression-level=9 -define png:compression-strategy=0 \
                     -define png:exclude-chunk=all \
                     myimage.pbl.png
+        - font size on emery/gabbro too small?
         - touchscreen control
             - fast timer/alarm setting
             - treat as activity for update_tick_subscription
@@ -286,7 +286,7 @@ static void stopwatch_clear(void){
 */
 static time_t get_alarm_increment_diff(const IncrementMode incr, const bool add) {
     // Each increment adds 15s until 2 minutes, then by 30s until 5m etc
-    const time_t diffs[4]      = {5,   30,   60,    60*5};  // TODO 15 not 5
+    const time_t diffs[4]      = {15,   30,   60,    60*5};
     const time_t thresholds[4] = {2*60, 5*60, 30*60, TIME_MAX};
     int bucket = 0;
     for (; bucket < 4; bucket++){
