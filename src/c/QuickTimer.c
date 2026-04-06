@@ -145,7 +145,7 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
         const char* fmt = show_s ? "%s%dm%02ds" : "%s%dm......";
         snprintf(buffer, size, fmt, neg, m, s);
     } else {
-        ASSERT(show_s);
+        ASSERT(show_s);  // TODO this is failing :/
         snprintf(buffer, size, "%s%ds", neg, s);
     }
 }
@@ -1073,9 +1073,9 @@ static void create_text_layout(Layer* parent) {
 
     create_alarm_icon(parent, first_text_y);
 
-    #define SMALL_TEXT(name, y_loc) \
+    #define SMALL_TEXT(name, x_loc, y_loc) \
     MACRO_START \
-        s_text_layer_##name = text_layer_create(GRect(0, y_loc, bounds.size.w, small_text_h)); \
+        s_text_layer_##name = text_layer_create(GRect(x_loc, y_loc, bounds.size.w, small_text_h)); \
         text_layer_set_text(s_text_layer_##name, s_##name##_text); \
         text_layer_set_text_alignment(s_text_layer_##name, GTextAlignmentCenter); \
         text_layer_set_font(s_text_layer_##name, small_text_font); \
@@ -1084,17 +1084,17 @@ static void create_text_layout(Layer* parent) {
     MACRO_END
 
     // alarm time
-    SMALL_TEXT(alarm_time, first_text_y);
+    SMALL_TEXT(alarm_time, 0, first_text_y);
     layer_add_child(parent, text_layer_get_layer(s_text_layer_alarm_time));
 
     // duration
     s_duration_layer = layer_create(GRect(0, second_text_y, bounds.size.w, small_text_h * 2));
     layer_add_child(parent, s_duration_layer);
 
-    SMALL_TEXT(alarm_duration, 0);
+    SMALL_TEXT(alarm_duration, 0, 0);
     layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_alarm_duration));
 
-    SMALL_TEXT(edit_indicator, small_text_h - 3);
+    SMALL_TEXT(edit_indicator, -150, small_text_h - 3);
     layer_add_child(s_duration_layer, text_layer_get_layer(s_text_layer_edit_indicator));
 
     // primary text (elapsed or remaining)
@@ -1108,7 +1108,7 @@ static void create_text_layout(Layer* parent) {
 
     // secondary (elapsed or remaining)
     #define s_secondary_text s_remaining_text
-    SMALL_TEXT(secondary, main_text_y + main_text_h + spacing);
+    SMALL_TEXT(secondary, 0, main_text_y + main_text_h + spacing);
     layer_add_child(parent, text_layer_get_layer(s_text_layer_secondary));
     #undef s_secondary_text
 
