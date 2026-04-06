@@ -1,6 +1,5 @@
 /*
     TODO
-        - hide seconds duration when it is zero and we're beyond the edit threshold
         - obey system "content size" setting?
         - font size on emery/gabbro too small?
         - configuration via clay
@@ -125,10 +124,17 @@ static TimeUnits s_update_rate = YEAR_UNIT;
  Generic-ish functions
 ******************************************************************************/
 
+// Styles for showing seconds for snprintf_hms
+typedef enum SecDisplay {
+    SEC_HIDE = 0,
+    SEC_DOTS,
+    SEC_SHOW
+} SecDisplay;
+
 /// Format `seconds` into a `buffer` of `size` as days, hours, minutes, seconds
 /// `truncate_h` to exclude hours if 0 (days is always truncated if 0)
 /// `show_s` to show seconds unit
-static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate_h, bool show_s) {
+static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate_h, SecDisplay sec_disp) {
     const char* neg = seconds < 0 ? "-" : "";
     const int abs_seconds = ABS(seconds);
     const int d = abs_seconds / SECONDS_PER_DAY;
@@ -136,17 +142,23 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
     const int m = (abs_seconds % SECONDS_PER_HOUR ) / SECONDS_PER_MINUTE;
     const int s = abs_seconds % SECONDS_PER_MINUTE;
     if (d) {
-        const char* fmt = show_s ? "%s%dd%02dh%02dm%02ds" : "%s%dd%02dh%02dm......";
+        const char* fmt = (sec_disp == SEC_SHOW) ? "%s%dd%02dh%02dm%02ds"
+                        : (sec_disp == SEC_DOTS) ? "%s%dd%02dh%02dm......"
+                        :                          "%s%dd%02dh%02dm";
         snprintf(buffer, size, fmt, neg, d, h, m, s);
     } else if (h || !truncate_h) {
         // TODO I wish this font was fixed-width; use ...
-        const char* fmt = show_s ? "%s%dh%02dm%02ds" : "%s%dh%02dm......";
+        const char* fmt = (sec_disp == SEC_SHOW) ? "%s%dh%02dm%02ds"
+                        : (sec_disp == SEC_DOTS) ? "%s%dh%02dm......"
+                        :                          "%s%dh%02dm";
         snprintf(buffer, size, fmt, neg, h, m, s);
     } else if (m || (s_update_rate == MINUTE_UNIT)) {
-        const char* fmt = show_s ? "%s%dm%02ds" : "%s%dm......";
+        const char* fmt = (sec_disp == SEC_SHOW) ? "%s%dm%02ds"
+                        : (sec_disp == SEC_DOTS) ? "%s%dm......"
+                        :                          "%s%dm";
         snprintf(buffer, size, fmt, neg, m, s);
     } else {
-        ASSERT(show_s);
+        ASSERT(sec_disp == SEC_SHOW);
         snprintf(buffer, size, "%s%ds", neg, s);
     }
 }
@@ -506,9 +518,19 @@ static void alarm_reset(void) {
  UI updates
 ******************************************************************************/
 
-// Return true if seconds should be shown for elapsed/remaining
-static bool should_show_seconds(void) {
-    return (s_update_rate == SECOND_UNIT) || !s_state.is_counting || s_initialising;
+// for elapsed and remaining
+static SecDisplay seconds_elapsed_display_style(void) {
+    const bool show = (s_update_rate == SECOND_UNIT) || !s_state.is_counting || s_initialising;
+    return show ? SEC_SHOW : SEC_DOTS;
+}
+
+static SecDisplay seconds_duration_display_style(void) {
+    const bool show = (
+        (s_mode == MODE_SECS)
+        || ((s_state.alarm_duration % SECONDS_PER_MINUTE) != 0)
+        || ((s_mode == MODE_CTRL) && (get_next_mode(false) == MODE_SECS))
+    );
+    return show ? SEC_SHOW : SEC_HIDE;
 }
 
 /// Note: Max icon size is 28x18, recommended 15x15
@@ -603,7 +625,7 @@ static void update_remaining(void) {
     bool show_alarm_icon = false;
     if (s_state.alarm_duration > 0) {
         const time_t remaining = s_state.alarm_duration - s_state.elapsed_time;
-        snprintf_hms(s_remaining_text, sizeof(s_remaining_text), remaining, true, should_show_seconds());
+        snprintf_hms(s_remaining_text, sizeof(s_remaining_text), remaining, true, seconds_elapsed_display_style());
         show_alarm_icon = remaining > 0;
     }
 
@@ -613,23 +635,38 @@ static void update_remaining(void) {
     update_primary_and_secondary_text();
 }
 
+// Set the duration text, which depends on the mode
+static void set_duration_text(void) {
+    snprintf_hms(s_alarm_duration_text, sizeof(s_alarm_duration_text), s_state.alarm_duration,
+                 false, seconds_duration_display_style());
+    text_layer_set_text(s_text_layer_alarm_duration, s_alarm_duration_text);
+}
+
 static void update_mode(void) {
     const char* text = "^^";
     GRect frame = layer_get_frame((Layer*)s_text_layer_edit_indicator);
     const bool two_digit_hours = s_state.alarm_duration >= (10 * SECONDS_PER_HOUR);
     const bool has_days = s_state.alarm_duration >= SECONDS_PER_DAY;
+    #define ADJUST_FOR_HIDDEN_SECONDS() MACRO_START \
+        if (seconds_duration_display_style() != SEC_SHOW) { \
+            frame.origin.x += 10; \
+        } \
+    MACRO_END
     // note the character width is 7px
     switch (s_mode) {
         case MODE_HOURS:
             text = two_digit_hours ? "^^" : "^";
             frame.origin.x = has_days ? -19 : -26;
+            ADJUST_FOR_HIDDEN_SECONDS();
             break;
         case MODE_5MINS:
             frame.origin.x = has_days ? 2 : two_digit_hours ? -5 : -9;
+            ADJUST_FOR_HIDDEN_SECONDS();
             break;
         case MODE_MINS:
             text = "^";
             frame.origin.x = has_days ? 6 : two_digit_hours ? -1 : -5;
+            ADJUST_FOR_HIDDEN_SECONDS();
             break;
         case MODE_SECS:
             frame.origin.x = 16;
@@ -656,21 +693,20 @@ static void update_mode(void) {
     }
     s_edit_indicator_animation = property_animation_create_layer_frame((Layer*)s_text_layer_edit_indicator, NULL, &frame);
     animation_schedule(property_animation_get_animation(s_edit_indicator_animation));
+
+    set_duration_text();
 }
 
 static void update_alarm_duration(void) {
     TRACE("update_alarm_duration");
-    // TODO dont show seconds when duration is long
-    snprintf_hms(s_alarm_duration_text, sizeof(s_alarm_duration_text), s_state.alarm_duration, false, true);
-    text_layer_set_text(s_text_layer_alarm_duration, s_alarm_duration_text);
-
+    // note set_duration_text() is called by update_mode
     update_mode();
     update_alarm_time();
 }
 
 static void update_elapsed(void) {
     // TRACE("update_elapsed");
-    snprintf_hms(s_elapsed_text, sizeof(s_elapsed_text), s_state.elapsed_time, true, should_show_seconds());
+    snprintf_hms(s_elapsed_text, sizeof(s_elapsed_text), s_state.elapsed_time, true, seconds_elapsed_display_style());
     update_remaining();
 }
 
