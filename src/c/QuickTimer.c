@@ -145,7 +145,7 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
         const char* fmt = show_s ? "%s%dm%02ds" : "%s%dm......";
         snprintf(buffer, size, fmt, neg, m, s);
     } else {
-        ASSERT(show_s);  // TODO this is failing :/
+        ASSERT(show_s);
         snprintf(buffer, size, "%s%ds", neg, s);
     }
 }
@@ -478,7 +478,7 @@ static void alarm_reset(void) {
 
 // Return true if seconds should be shown for elapsed/remaining
 static bool should_show_seconds(void) {
-    return (s_update_rate == SECOND_UNIT) || !s_state.is_counting;
+    return (s_update_rate == SECOND_UNIT) || !s_state.is_counting || s_initialising;
 }
 
 /// Note: Max icon size is 28x18, recommended 15x15
