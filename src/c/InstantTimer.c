@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define DEBUG 1  // TODO disable for release
+#define DEBUG 0  // TODO disable for release
 #include "Macros.h"
 
 

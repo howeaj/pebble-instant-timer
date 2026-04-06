@@ -17,9 +17,9 @@
     #define ASSERT(condition) if (!(condition)) APP_LOG(APP_LOG_LEVEL_ERROR, \
         "ASSERTION FAILED AT %s:%d - "#condition, __FILE__, __LINE__)
 #else // !DEBUG
-    #define LOG()
-    #define TRACE()
-    #define ASSERT()
+    #define LOG(...)
+    #define TRACE(...)
+    #define ASSERT(condition) (void)(condition)
 #endif // !DEBUG
 
 // Constants
