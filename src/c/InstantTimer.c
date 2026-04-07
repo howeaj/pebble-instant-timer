@@ -1177,6 +1177,7 @@ static void create_text_layout(Layer* parent) {
 
 #if PBL_PLATFORM_CHALK
     first_text_y += 3;  // ring is slightly wider to accommodate actionbar icons
+    spacing -= 1;
 #endif // PBL_PLATFORM_CHALK
 
     first_text_y -= spacing;
