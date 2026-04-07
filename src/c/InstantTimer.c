@@ -1159,24 +1159,33 @@ static void create_text_layout(Layer* parent) {
     const GFont main_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
     const int16_t main_text_h = 28;
 
+    // TODO redo this layout to distribute evenly from the centre
+    int16_t first_text_y = (bounds.size.h / 4);
+    int16_t status_icon_bottom_y = 0;
     int16_t spacing;
 #if PBL_DISPLAY_HEIGHT < 180
     spacing = 3;
 #elif PBL_DISPLAY_HEIGHT < 200
     spacing = 4;
-#else // PBL_DISPLAY_HEIGHT >= 200
+#elif PBL_DISPLAY_HEIGHT < 240
     spacing = 5;
+#else // PBL_DISPLAY_HEIGHT >= 240
+    spacing = 6;
+    first_text_y += 4;
+    status_icon_bottom_y -= 3;
 #endif // PBL_DISPLAY_HEIGHT
 
-    int16_t first_text_y = (bounds.size.h / 4) - spacing;
 #if PBL_PLATFORM_CHALK
     first_text_y += 3;  // ring is slightly wider to accommodate actionbar icons
 #endif // PBL_PLATFORM_CHALK
 
+    first_text_y -= spacing;
+    status_icon_bottom_y += first_text_y;
+
     const int16_t second_text_y = first_text_y + small_text_h + spacing;
     const int16_t main_text_y = second_text_y + small_text_h + (spacing * 2);
 
-    create_status_icon(parent, first_text_y);
+    create_status_icon(parent, status_icon_bottom_y);
 
     #define SMALL_TEXT(name, x_loc, y_loc) \
     MACRO_START \
