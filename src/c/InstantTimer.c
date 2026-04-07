@@ -1,5 +1,6 @@
 /*
     TODO
+        - Small bell or alert icon in alarm icon slot for B&W platforms
         - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
         - configuration via clay
             - all colours
@@ -58,7 +59,7 @@ static TextLayer *s_text_layer_small_elapsed;
 #define MAX_TEXT_SIZE (50)
 static char s_edit_indicator_text[MAX_TEXT_SIZE] = "^";
 static char s_alarm_duration_text[MAX_TEXT_SIZE] = "00h00m00s";
-static char s_alarm_time_text[MAX_TEXT_SIZE] = "00:00pm";
+static char s_alarm_time_text[MAX_TEXT_SIZE] = "00:00 PM";
 static char s_elapsed_text[MAX_TEXT_SIZE] = "00h00m00s";
 static char s_remaining_text[MAX_TEXT_SIZE] = "00h00m00s";
 
@@ -163,7 +164,7 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
 // format a time_t into a string
 void snprintf_time(char* target, size_t size, const char* fmt, time_t time) {
     char time_str[MAX_TEXT_SIZE] = {0};
-    const char* time_fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M%P";
+    const char* time_fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M %p";
     strftime(time_str, sizeof(time_str), time_fmt, localtime(&time));
     snprintf(target, size, fmt, time_str);
 }
@@ -603,7 +604,7 @@ static void update_alarm_time(void) {
     if (show_alarm_time) {
         const time_t alarm_time = time(NULL) + s_state.alarm_duration - s_state.elapsed_time;
         const struct tm* alarm_time_local = localtime(&alarm_time);
-        const char* fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M%P";
+        const char* fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M %p";
         const size_t num_bytes = strftime(s_alarm_time_text, sizeof(s_alarm_time_text), fmt, alarm_time_local);
         ASSERT(num_bytes);
         text_layer_set_text(s_text_layer_alarm_time, s_alarm_time_text);
@@ -1130,7 +1131,7 @@ static void create_text_layout(Layer* parent) {
     const GRect bounds = layer_get_bounds(parent);
 
 #if PBL_DISPLAY_HEIGHT >= 200
-    const GFont small_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_24);
+    const GFont small_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_24);  // TODO maybe make bold?
     const int16_t small_text_h = 24;
 #else // PBL_DISPLAY_HEIGHT < 200
     const GFont small_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_18);
