@@ -24,8 +24,7 @@ Features:
         - Alarm time or start time shown in system app menu.
         - Supports all pebble platforms.
 
-Future updates:
-    Time 2 / Round 2's higher DPI screens might need bigger fonts? (it's hard to tell without access to hardware)
+Planned updates:
     Faster setting with touchscreen (I'll implement this as soon as a touch screen API is available!)
     User configuration to set colours and other preferences (tell me what you want to be tweakable!)
 
@@ -62,5 +61,5 @@ Use (a) different app(s) if you want:
 
 This is based on an unreleased app I made just for myself for an android smartwatch years ago, which ended up being the only thing I ever used it for, daily. Watches are primarily for dealing with time after all, and I just can't find any other timer app that does what I want! Now redesigned and polished for release on pebble in the hope that I'm not an alien freak and this is useful for someone else too :P.
 
-I welcome any suggestions for futher improvements.
+Suggestions for further improvements welcome.
 Thanks for checking this out!
