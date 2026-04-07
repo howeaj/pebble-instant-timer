@@ -88,7 +88,17 @@
         {
           "type": "bitmap",
           "name": "ALARM",
-          "file": "images/alarm_15x15.png"
+          "file": "images/status_alarm.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "ALERT",
+          "file": "images/status_alert.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "PAUSE",
+          "file": "images/status_pause.png"
         },
         {
           "type": "raw",

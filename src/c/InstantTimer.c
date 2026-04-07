@@ -46,8 +46,10 @@ static Layer* s_duration_layer;
     static GDrawCommandImage* s_icon_bell_r;
 #endif // PBL_COLOR
 
-static BitmapLayer* s_alarm_icon_layer;
-static GBitmap* s_icon_alarm;
+static BitmapLayer* s_status_icon_layer;
+static GBitmap* s_status_icon_alarm;
+static GBitmap* s_status_icon_alert;
+static GBitmap* s_status_icon_pause;
 
 // text
 static TextLayer *s_text_layer_edit_indicator;
@@ -598,6 +600,23 @@ static void update_primary_and_secondary_text(void) {
     animate_scroll((Layer*)s_text_layer_small_elapsed, !is_timer_mode, false, &was_secondary_visible);
 }
 
+static void update_status_icon(void) {
+    const time_t remaining = s_state.alarm_duration - s_state.elapsed_time;
+
+    bool show_status_icon = true;
+    if (alarm_is_pulsing()) {
+        bitmap_layer_set_bitmap(s_status_icon_layer, s_status_icon_alert);
+    } else if (!s_state.is_counting) {
+        bitmap_layer_set_bitmap(s_status_icon_layer, s_status_icon_pause);
+    } else if (remaining > 0) {
+        bitmap_layer_set_bitmap(s_status_icon_layer, s_status_icon_alarm);
+    } else {
+        show_status_icon = false;
+    }
+    static bool was_show_status_icon = false;
+    animate_scroll(bitmap_layer_get_layer(s_status_icon_layer), show_status_icon, true, &was_show_status_icon);
+}
+
 static void update_alarm_time(void) {
     // TRACE("update_alarm_time");
     const bool show_alarm_time = s_state.alarm_duration > 0;
@@ -619,16 +638,11 @@ static void update_alarm_time(void) {
 
 static void update_remaining(void) {
     // TRACE("update_remaining");
-    bool show_alarm_icon = false;
     if (s_state.alarm_duration > 0) {
         const time_t remaining = s_state.alarm_duration - s_state.elapsed_time;
         snprintf_hms(s_remaining_text, sizeof(s_remaining_text), remaining, true, seconds_elapsed_display_style());
-        show_alarm_icon = remaining > 0;
     }
-
-    static bool was_show_alarm_icon = false;
-    animate_scroll(bitmap_layer_get_layer(s_alarm_icon_layer), show_alarm_icon, true, &was_show_alarm_icon);
-
+    update_status_icon();
     update_primary_and_secondary_text();
 }
 
@@ -787,7 +801,7 @@ static void do_restart(void){
 static void do_toggle_pause(void) {
     vibe_for_start_stop();
     stopwatch_toggle();
-    update_elapsed();  // to unhide seconds
+    update_elapsed();  // to unhide seconds and update status icon
 }
 
 // modify the alarm duration
@@ -803,6 +817,7 @@ static bool do_alarm_clear(void) {
     const bool cleared = alarm_clear();
     if (cleared) {
         toggle_action_bar(true);
+        update_status_icon();
     }
     return cleared;
 }
@@ -819,6 +834,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
         update_elapsed();
         if (alarm_should_start()) {
             alarm_start();
+            update_status_icon();
         }
         toggle_action_bar(!alarm_is_pulsing());
     } else {
@@ -1106,13 +1122,15 @@ static void render_background(Layer *layer, GContext *ctx) {
 #endif // PBL_COLOR
 }
 
-static void create_alarm_icon(Layer* parent, int16_t alarm_text_y) {
+static void create_status_icon(Layer* parent, int16_t alarm_text_y) {
     const GRect bounds = layer_get_bounds(parent);
 
-    s_icon_alarm = gbitmap_create_with_resource(RESOURCE_ID_ALARM);
-    const GSize size = gbitmap_get_bounds(s_icon_alarm).size;
+    s_status_icon_alarm = gbitmap_create_with_resource(RESOURCE_ID_ALARM);
+    s_status_icon_alert = gbitmap_create_with_resource(RESOURCE_ID_ALERT);
+    s_status_icon_pause = gbitmap_create_with_resource(RESOURCE_ID_PAUSE);
+    const GSize size = gbitmap_get_bounds(s_status_icon_alarm).size;
 
-    const GRect alarm_icon_frame = {
+    const GRect status_icon_frame = {
         .origin = {
             (bounds.size.w / 2) - (size.w / 2),
             alarm_text_y - size.h + 1
@@ -1120,11 +1138,11 @@ static void create_alarm_icon(Layer* parent, int16_t alarm_text_y) {
         .size = size
     };
 
-    s_alarm_icon_layer = bitmap_layer_create(alarm_icon_frame);
-    bitmap_layer_set_bitmap(s_alarm_icon_layer, s_icon_alarm);
-    bitmap_layer_set_compositing_mode(s_alarm_icon_layer, GCompOpSet);  // enable transparency
-    bitmap_layer_set_background_color(s_alarm_icon_layer, GColorClear);
-    layer_add_child(parent, bitmap_layer_get_layer(s_alarm_icon_layer));
+    s_status_icon_layer = bitmap_layer_create(status_icon_frame);
+    bitmap_layer_set_bitmap(s_status_icon_layer, s_status_icon_alarm);
+    bitmap_layer_set_compositing_mode(s_status_icon_layer, GCompOpSet);  // enable transparency
+    bitmap_layer_set_background_color(s_status_icon_layer, GColorClear);
+    layer_add_child(parent, bitmap_layer_get_layer(s_status_icon_layer));
 }
 
 static void create_text_layout(Layer* parent) {
@@ -1158,7 +1176,7 @@ static void create_text_layout(Layer* parent) {
     const int16_t second_text_y = first_text_y + small_text_h + spacing;
     const int16_t main_text_y = second_text_y + small_text_h + (spacing * 2);
 
-    create_alarm_icon(parent, first_text_y);
+    create_status_icon(parent, first_text_y);
 
     #define SMALL_TEXT(name, x_loc, y_loc) \
     MACRO_START \
@@ -1290,9 +1308,11 @@ static void main_window_unload(Window *window) {
 #endif // PBL_COLOR
     layer_destroy(s_bg_layer);
 
-    // alarm icon
-    gbitmap_destroy(s_icon_alarm);
-    bitmap_layer_destroy(s_alarm_icon_layer);
+    // status icon
+    gbitmap_destroy(s_status_icon_alarm);
+    gbitmap_destroy(s_status_icon_alert);
+    gbitmap_destroy(s_status_icon_pause);
+    bitmap_layer_destroy(s_status_icon_layer);
 
     // text
     layer_destroy(s_duration_layer);
