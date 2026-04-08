@@ -21,6 +21,7 @@ sleep 1
 pebble emu-time-format --format 12h
 pebble emu-button click select --emulator $1
 pebble emu-button click up --emulator $1 --repeat 6
-pebble emu-set-time --emulator $1 --utc 23:58:00
+pebble emu-set-time --emulator $1 --utc 19:54:00
+sleep 1
 pebble screenshot --emulator $1
 sleep 1

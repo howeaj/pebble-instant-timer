@@ -1,6 +1,5 @@
 /*
     TODO
-        - Small bell or alert icon in alarm icon slot for B&W platforms
         - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
         - configuration via clay
             - all colours
@@ -21,6 +20,7 @@
             - just edit these icons in raster
 */
 
+#include <math.h>
 #include <pebble.h>
 #include <stdio.h>
 #include <time.h>
@@ -134,7 +134,6 @@ typedef enum SecDisplay {
 
 /// Format `seconds` into a `buffer` of `size` as days, hours, minutes, seconds
 /// `truncate_h` to exclude hours if 0 (days is always truncated if 0)
-/// `show_s` to show seconds unit
 static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncate_h, SecDisplay sec_disp) {
     const char* neg = seconds < 0 ? "-" : "";
     const int abs_seconds = ABS(seconds);
@@ -231,6 +230,14 @@ float fast_sqrt(const float x)
     u.x = x;
     u.i = 0x5f3759df - (u.i >> 1);  // initial guess
     return x * u.x * (1.5f - xhalf * u.x * u.x);  // Newton step
+}
+
+/// Return the diagonal length of `rect`
+int32_t grect_diagonal(GRect rect) {
+    return ceil(fast_sqrt(
+        (rect.size.h * rect.size.h)
+        + (rect.size.w * rect.size.w)
+    ));
 }
 
 
@@ -1055,64 +1062,84 @@ static void draw_pause_background(GPoint centre, int16_t central_panel_radius, G
 }
 #endif // PBL_COLOR
 
-static void render_background(Layer *layer, GContext *ctx) {
-    const GRect bounds = layer_get_bounds(layer);
 
-#if PBL_PLATFORM_CHALK  // ring is slightly wider to accommodate actionbar icons
+// Render background elements, including the progress ring
+static void render_background(Layer *layer, GContext *ctx) {
+    GRect bounds = layer_get_bounds(layer);
+
+    // empty background
+    graphics_context_set_fill_color(ctx, BG_COLOR);
+    graphics_fill_rect(ctx, bounds, 0, GCornerNone);
+
+#if PBL_PLATFORM_EMERY  // Time2's bezel covers screen edges, so add a margin
+    const int32_t margin = 10;
+    const GRect ring_bounds = grect_inset(bounds, (GEdgeInsets){margin, margin, margin, margin});
+#else // !PBL_PLATFORM_EMERY
+    const GRect ring_bounds = bounds;
+#endif // !PBL_PLATFORM_EMERY
+
+#if PBL_PLATFORM_CHALK  // make the ring slightly wider to accommodate actionbar icons
     const int16_t central_panel_radius = (bounds.size.h * 0.34);
 #else // !PBL_PLATFORM_CHALK
     const int16_t central_panel_radius = (bounds.size.h * (bounds.size.h > 160 ? 0.38: 0.45));
 #endif // PBL_PLATFORM_CHALK
 
-    const uint16_t ring_thickness = (uint16_t) ((bounds.size.h / 2) - central_panel_radius);
+    const uint16_t ring_thickness = (uint16_t) ((ring_bounds.size.h / 2) - central_panel_radius);
     const bool is_overtime = s_state.alarm_duration && (s_state.elapsed_time >= s_state.alarm_duration);
-
-    // background
-    graphics_context_set_fill_color(ctx, BG_COLOR);
-    graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
     // ring background
     graphics_context_set_fill_color(ctx, is_overtime ? EMPTY_RING_COLOR : REMAINING_COLOR);
 #if PBL_ROUND
-    graphics_fill_radial(ctx, bounds, GOvalScaleModeFillCircle, ring_thickness, DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
-    const GRect ring_bounds = bounds;
+    graphics_fill_radial(ctx, ring_bounds, GOvalScaleModeFillCircle, ring_thickness,
+                         DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
+    const GRect ring_foreground_bounds = ring_bounds;
 #else // PBL_RECT
     const uint16_t corner_radius = 10;
-    graphics_fill_rect(ctx, bounds, corner_radius, GCornersAll);
-    const GSize size = {
-        bounds.size.w,
-        (int16_t)fast_sqrt((bounds.size.h * bounds.size.h) + (bounds.size.w * bounds.size.w)) - (corner_radius - 3)
-    };
-    const GPoint ring_centre = grect_center_point(&bounds);
-    const GRect ring_bounds = {
-        .origin = {ring_centre.x - (size.w / 2), ring_centre.y - (size.h / 2)},
-        .size = size
+    graphics_fill_rect(ctx, ring_bounds, corner_radius, GCornersAll);
+
+    // rect-only calculations for the ring foreground.
+    // we're going to cover the rect background with a foreground radial
+    const int16_t diameter = grect_diagonal(ring_bounds) - corner_radius + 3;  // manually tweaked
+    const GPoint ring_centre = grect_center_point(&ring_bounds);
+    const GRect ring_foreground_bounds = {
+        .origin = {ring_centre.x - (diameter / 2), ring_centre.y - (diameter / 2)},
+        .size = {diameter, diameter}
     };
 #endif // PBL_RECT
 
     // ring foreground
     if (s_state.alarm_duration) {
         graphics_context_set_fill_color(ctx, is_overtime ? OVERTIME_COLOR : EMPTY_RING_COLOR);
-        graphics_fill_radial(ctx, ring_bounds, GOvalScaleModeFillCircle,
-            PBL_IF_ROUND_ELSE(ring_thickness, bounds.size.h),
+        graphics_fill_radial(ctx, ring_foreground_bounds, GOvalScaleModeFillCircle,
+            PBL_IF_ROUND_ELSE(ring_thickness, ring_foreground_bounds.size.w),
             DEG_TO_TRIGANGLE(0),
             (TRIG_MAX_ANGLE * s_state.elapsed_time / s_state.alarm_duration) % (TRIG_MAX_ANGLE + 1)
         );
     }
 
 #if PBL_RECT
-    // central panel
+    // central panel is an extra graphics_fill_rect, rather than the missing centre of graphics_fill_radial
     graphics_context_set_fill_color(ctx, BG_COLOR);
-    const GRect central_panel_rect = {
-        .origin = {ring_thickness, ring_thickness},
-        .size = {bounds.size.w - (ring_thickness * 2), central_panel_radius * 2}
-    };
+    const GRect central_panel_rect = grect_inset(ring_bounds,
+        (GEdgeInsets){ring_thickness, ring_thickness, ring_thickness, ring_thickness});
     graphics_fill_rect(ctx, central_panel_rect, corner_radius, GCornersAll);
+
+#if PBL_PLATFORM_EMERY
+    // clip off the outer edges of the ring foreground to restore the margin
+    graphics_fill_rect(ctx, (GRect){  // top
+        {bounds.origin.x, bounds.origin.y}, {bounds.size.w, margin}}, 0, GCornerNone);
+    graphics_fill_rect(ctx, (GRect){  // left
+        {bounds.origin.x, bounds.origin.y}, {margin, bounds.size.h}}, 0, GCornerNone);
+    graphics_fill_rect(ctx, (GRect){  // bottom
+        {bounds.origin.x, bounds.origin.y + margin + ring_bounds.size.h}, {bounds.size.w, margin}}, 0, GCornerNone);
+    graphics_fill_rect(ctx, (GRect){  // right
+        {bounds.origin.x + margin + ring_bounds.size.w, bounds.origin.y}, {margin, bounds.size.h}}, 0, GCornerNone);
+#endif // PBL_PLATFORM_EMERY
 #endif // PBL_RECT
 
 #if PBL_COLOR
+    // large icons appearing in the background of the central panel
     const GPoint centre = grect_center_point(&bounds);
-    // pause symbol
     if (!s_state.is_counting) {
         draw_pause_background(centre, central_panel_radius, ctx);
     }
@@ -1122,6 +1149,7 @@ static void render_background(Layer *layer, GContext *ctx) {
 #endif // PBL_COLOR
 }
 
+// Create the resources for the small icon at the top
 static void create_status_icon(Layer* parent, int16_t alarm_text_y) {
     const GRect bounds = layer_get_bounds(parent);
 
