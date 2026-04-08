@@ -128,7 +128,7 @@ static TimeUnits s_update_rate = YEAR_UNIT;
 // Styles for showing seconds for snprintf_hms
 typedef enum SecDisplay {
     SEC_HIDE = 0,
-    SEC_DOTS,
+    SEC_DASH,
     SEC_SHOW
 } SecDisplay;
 
@@ -143,18 +143,18 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
     const int s = abs_seconds % SECONDS_PER_MINUTE;
     if (d) {
         const char* fmt = (sec_disp == SEC_SHOW) ? "%s%dd%02dh%02dm%02ds"
-                        : (sec_disp == SEC_DOTS) ? "%s%dd%02dh%02dm......"
+                        : (sec_disp == SEC_DASH) ? "%s%dd%02dh%02dm--s"
                         :                          "%s%dd%02dh%02dm";
         snprintf(buffer, size, fmt, neg, d, h, m, s);
     } else if (h || !truncate_h) {
         // TODO I wish this font was fixed-width; use ...
         const char* fmt = (sec_disp == SEC_SHOW) ? "%s%dh%02dm%02ds"
-                        : (sec_disp == SEC_DOTS) ? "%s%dh%02dm......"
+                        : (sec_disp == SEC_DASH) ? "%s%dh%02dm--s"
                         :                          "%s%dh%02dm";
         snprintf(buffer, size, fmt, neg, h, m, s);
     } else if (m || (s_update_rate == MINUTE_UNIT)) {
         const char* fmt = (sec_disp == SEC_SHOW) ? "%s%dm%02ds"
-                        : (sec_disp == SEC_DOTS) ? "%s%dm......"
+                        : (sec_disp == SEC_DASH) ? "%s%dm--s"
                         :                          "%s%dm";
         snprintf(buffer, size, fmt, neg, m, s);
     } else {
@@ -527,7 +527,7 @@ static void alarm_reset(void) {
 // for elapsed and remaining
 static SecDisplay seconds_elapsed_display_style(void) {
     const bool show = (s_update_rate == SECOND_UNIT) || !s_state.is_counting || s_initialising;
-    return show ? SEC_SHOW : SEC_DOTS;
+    return show ? SEC_SHOW : SEC_DASH;
 }
 
 static SecDisplay seconds_duration_display_style(void) {
