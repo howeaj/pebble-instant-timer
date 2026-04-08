@@ -1,6 +1,6 @@
 A polished combination timer, alarm and stopwatch.
 
-Designed for quick-launch to set everyday timers/alarms for cooking, reminders and alarms.
+Designed for quick-launch to set everyday timers for cooking, reminders and alarms.
 Packed with unique, detailed behaviour to optimise frequent use.
 
 Give a heart if you like it!
@@ -28,7 +28,6 @@ Features:
         - Supports all pebble platforms.
 
 Planned updates:
-    - Fix display on Time2, if the appstore preview is anything to go by!
     - Faster setting with touchscreen
        (I'll implement this as soon as a touch screen API is available)
     - User configuration to set colours and other preferences
