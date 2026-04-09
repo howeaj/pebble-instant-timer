@@ -14,6 +14,7 @@ Full feature list:
        switching between modes (nor running them separately)
     - Modify the timer/alarm duration immediately anytime without a pause, restart or confirm.
     - Timer modification controls optimised for speed
+           Increment by 1h, 5m or 1m. For very short timers can also increment by 30s (<5m) or 15s (<2m).
     - Battery saving:
         - Automatically switches between per-second and per-minute updates based on activity:
             - Synchronised with system backlight (lit by button presses, tap/shake, battery charging).

@@ -337,10 +337,10 @@ static void stopwatch_clear(void){
 */
 static time_t get_alarm_increment_diff(const IncrementMode incr, const bool add) {
     // Each increment adds 15s until 2 minutes, then by 30s until 5m etc
-    const time_t diffs[4]      = {15,   30,   60,    60*5};
-    const time_t thresholds[4] = {2*60, 5*60, 30*60, TIME_MAX};
-    int bucket = 0;
-    for (; bucket < 4; bucket++){
+    const time_t diffs[3]      = {15,   30,   60      };
+    const time_t thresholds[3] = {2*60, 5*60, TIME_MAX};
+    size_t bucket = 0;
+    for (; bucket < ARRAY_LENGTH(thresholds); bucket++){
         if ((s_state.alarm_duration - ((add || !s_state.alarm_duration) ? 0 : 1)) < thresholds[bucket]){
             break;
         }
