@@ -769,7 +769,7 @@ void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void 
     if (s_save && s_state.is_counting) {
         if (s_state.alarm_duration > 0) {
             const time_t alarm_time = s_state.start_time + s_state.alarm_duration;
-            snprintf_time(subtitle, sizeof(subtitle), "Alarm expired at %s", alarm_time);
+            snprintf_time(subtitle, sizeof(subtitle), "Expired at %s", alarm_time);
             ADD_SLICE();
             if (s_state.elapsed_time < s_state.alarm_duration) {
                 snprintf_time(subtitle, sizeof(subtitle), "Alarm set for %s", alarm_time);
@@ -777,7 +777,7 @@ void glance_reload_callback(AppGlanceReloadSession *session, size_t limit, void 
                 ADD_SLICE();
             }
         } else {
-            snprintf_time(subtitle, sizeof(subtitle), "Timer running since %s", s_state.start_time);
+            snprintf_time(subtitle, sizeof(subtitle), "Running since %s", s_state.start_time);
             ADD_SLICE();
         }
     }
