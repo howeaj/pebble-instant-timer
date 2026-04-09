@@ -3,16 +3,17 @@ A polished combination timer, alarm and stopwatch.
 Designed for quick-launch to set everyday timers for cooking, reminders and alarms.
 Packed with unique, detailed behaviour to optimise frequent use.
 
-Give a heart if you like it!
+Specifically, this does 3 things I couldn't find anywhere else:
+    - Start counting immediately on launch
+    - Show all 4 relevant values (alarm time, duration, remaining, elapsed) at all times
+    - Modify the duration at any point without having to pause/restart or confirm
 
-Features:
-    - Unique to this app:
-        - One-press operation; starts counting immediately on launch.
-        - Single interface works simultaneously as an alarm, timer and/or stopwatch; no
-            switching between modes (nor running them separately)
-        - Modify the timer/alarm duration immediately anytime without a pause, restart or confirm.
-        - Timer modification controls optimised for speed
-           (skips smaller increments as duration grows; thresholds at 2m, 5m, 30m)
+Full feature list:
+    - One-press operation; starts counting immediately on launch.
+    - Single interface works simultaneously as an alarm, timer and/or stopwatch; no
+       switching between modes (nor running them separately)
+    - Modify the timer/alarm duration immediately anytime without a pause, restart or confirm.
+    - Timer modification controls optimised for speed
     - Battery saving:
         - Automatically switches between per-second and per-minute updates based on activity:
             - Synchronised with system backlight (lit by button presses, tap/shake, battery charging).
@@ -20,17 +21,19 @@ Features:
                the timer/alarm duration is below 2 minutes.
         - Zero power usage when running in background (no background worker, Wakeup API alarm)
         - Automatically stops alarm vibe after 1 minute
-    - Other basics:
-        - Runs in background, auto-opens for alarm.
-        - Counts overtime after the timer/alarm elapses.
-        - Short vibe on start/stop for blind operation.
-        - Alarm time or start time shown in system app menu.
-        - Supports all pebble platforms.
+    - Runs in background, auto-opens for alarm.
+    - Counts overtime after the timer/alarm elapses.
+    - After expiry, set a new alarm from the same base just by increasing the duration again
+    - Short vibe on start/stop for blind operation.
+    - Alarm time or start time shown in system app menu.
+    - Pause, resume, restart, reset
+    - Supports all pebble platforms.
 
 Planned updates:
     - Faster setting with touchscreen
        (I'll implement this as soon as a touch screen API is available)
-    - User configuration to set colours and other preferences
+    - User configuration to set colours, disable/modify battery saving mode,
+       and any other requested options
 
 Controls:
     - Select/Back to choose which timer digit(s) to modify.
@@ -70,4 +73,4 @@ Use (a) different app(s) if you want:
 This is based on an unreleased app I made just for myself for an android smartwatch years ago, which ended up being the only thing I ever used it for, daily. Watches are primarily for dealing with time after all, and I just can't find any other timer app that does what I want! Now redesigned and polished for release on pebble in the hope that I'm not an alien freak and this is useful for someone else too :P.
 
 Suggestions for further improvements welcome.
-Thanks for checking this out!
+Thanks for checking this out! Let me know if you end up using it :)

@@ -1,23 +1,27 @@
-/*
-    TODO
-        - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
-        - configuration via clay
-            - all colours
-            - palletize .pngs with ImageMagick
-                convert myimage.png \
-                    -adaptive-resize '144x168>' \
-                    -fill '#FFFFFF00' -opaque none \
-                    -dither FloydSteinberg \
-                    -remap pebble_colors_64.gif \
-                    -define png:compression-level=9 -define png:compression-strategy=0 \
-                    -define png:exclude-chunk=all \
-                    myimage.pbl.png
-        - touchscreen control
-            - fast timer/alarm setting
-            - treat as activity for update_tick_subscription
-        - investigate https://github.com/pebble-hacks/pebble_glancing_demo/blob/master/src/glancing_api.h
-        - fix caret_right (bottom is cut off)
-            - just edit these icons in raster
+// Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
+
+/* TODO
+    - animate app exit
+    - some kind of tutorial or help mode?
+    - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
+    - configuration via clay
+        - all colours
+        - disable battery saving rate reduction (or change its timeout)
+        - palletize .pngs with ImageMagick
+            convert myimage.png \
+                -adaptive-resize '144x168>' \
+                -fill '#FFFFFF00' -opaque none \
+                -dither FloydSteinberg \
+                -remap pebble_colors_64.gif \
+                -define png:compression-level=9 -define png:compression-strategy=0 \
+                -define png:exclude-chunk=all \
+                myimage.pbl.png
+    - touchscreen control
+        - fast timer/alarm setting
+        - treat as activity for update_tick_subscription
+    - investigate https://github.com/pebble-hacks/pebble_glancing_demo/blob/master/src/glancing_api.h
+    - fix caret_right (bottom is cut off)
+        - just edit these icons in raster
 */
 
 #include <math.h>
@@ -147,7 +151,6 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
                         :                          "%s%dd%02dh%02dm";
         snprintf(buffer, size, fmt, neg, d, h, m, s);
     } else if (h || !truncate_h) {
-        // TODO I wish this font was fixed-width; use ...
         const char* fmt = (sec_disp == SEC_SHOW) ? "%s%dh%02dm%02ds"
                         : (sec_disp == SEC_DASH) ? "%s%dh%02dm--s"
                         :                          "%s%dh%02dm";
