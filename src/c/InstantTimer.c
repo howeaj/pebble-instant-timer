@@ -165,17 +165,24 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
     }
 }
 
+// Return the time format for strftime
+static inline const char* time_fmt(void) {
+    return clock_is_24h_style() ? "%H:%M" : "%I:%M %p";
+}
+
+
+#if !PBL_PLATFORM_APLITE
 // format a time_t into a string
-void snprintf_time(char* target, size_t size, const char* fmt, time_t time) {
+static void snprintf_time(char* target, size_t size, const char* fmt, time_t time) {
     char time_str[MAX_TEXT_SIZE] = {0};
-    const char* time_fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M %p";
-    strftime(time_str, sizeof(time_str), time_fmt, localtime(&time));
+    strftime(time_str, sizeof(time_str), time_fmt(), localtime(&time));
     snprintf(target, size, fmt, time_str);
 }
+#endif // !PBL_PLATFORM_APLITE
 
 // Given a GRect that is the entire root window frame,
 // return a GRect shrunk for the status and action bars.
-GRect reduce_frame_for_system_bars(const GRect frame) {
+static GRect reduce_frame_for_system_bars(const GRect frame) {
 #if PBL_ROUND
     return frame;
 #else // PBL_RECT
@@ -221,8 +228,10 @@ static void animate_scroll(Layer *layer, bool appear, bool from_below, bool* was
     *was_visible = appear;
 }
 
+
+#if PBL_RECT
 // quake 3 sqrt
-float fast_sqrt(const float x)
+static float fast_sqrt(const float x)
 {
     const float xhalf = 0.5f * x;
     union
@@ -236,12 +245,13 @@ float fast_sqrt(const float x)
 }
 
 /// Return the diagonal length of `rect`
-int32_t grect_diagonal(GRect rect) {
+static int32_t grect_diagonal(GRect rect) {
     return ceil(fast_sqrt(
         (rect.size.h * rect.size.h)
         + (rect.size.w * rect.size.w)
     ));
 }
+#endif // PBL_RECT
 
 
 /******************************************************************************
@@ -595,19 +605,19 @@ static void toggle_action_bar(bool visible) {
 
 // Update the primary large text and the secondary text below it
 static void update_primary_and_secondary_text(void) {
-    const bool is_timer_mode = s_state.alarm_duration == 0;
-    if (is_timer_mode) {
+    const bool is_stopwatch_mode = s_state.alarm_duration == 0;
+    if (is_stopwatch_mode) {
         text_layer_set_text(s_text_layer_big_elapsed, s_elapsed_text);
     } else {
         text_layer_set_text(s_text_layer_big_remaining, s_remaining_text);
         text_layer_set_text(s_text_layer_small_elapsed, s_elapsed_text);
     }
     static bool was_big_remaining_visible = false;
-    animate_scroll((Layer*)s_text_layer_big_remaining, !is_timer_mode, false, &was_big_remaining_visible);
+    animate_scroll((Layer*)s_text_layer_big_remaining, !is_stopwatch_mode, false, &was_big_remaining_visible);
     static bool was_big_elapsed_visible = false;
-    animate_scroll((Layer*)s_text_layer_big_elapsed, is_timer_mode, true, &was_big_elapsed_visible);
+    animate_scroll((Layer*)s_text_layer_big_elapsed, is_stopwatch_mode, true, &was_big_elapsed_visible);
     static bool was_secondary_visible = false;
-    animate_scroll((Layer*)s_text_layer_small_elapsed, !is_timer_mode, false, &was_secondary_visible);
+    animate_scroll((Layer*)s_text_layer_small_elapsed, !is_stopwatch_mode, false, &was_secondary_visible);
 }
 
 static void update_status_icon(void) {
@@ -633,8 +643,7 @@ static void update_alarm_time(void) {
     if (show_alarm_time) {
         const time_t alarm_time = time(NULL) + s_state.alarm_duration - s_state.elapsed_time;
         const struct tm* alarm_time_local = localtime(&alarm_time);
-        const char* fmt = clock_is_24h_style() ? "%H:%M" : "%I:%M %p";
-        const size_t num_bytes = strftime(s_alarm_time_text, sizeof(s_alarm_time_text), fmt, alarm_time_local);
+        const size_t num_bytes = strftime(s_alarm_time_text, sizeof(s_alarm_time_text), time_fmt(), alarm_time_local);
         ASSERT(num_bytes);
         text_layer_set_text(s_text_layer_alarm_time, s_alarm_time_text);
     }
@@ -680,7 +689,7 @@ static void update_mode(void) {
 #else // PBL_DISPLAY_HEIGHT < 200
     #define ADJUST_FOR_LARGE_FONT()
 #endif // PBL_DISPLAY_HEIGHT < 200
-    // note the character width is 7px
+    // TODO I *really* wish this font was fixed-width :')
     switch (s_mode) {
         case MODE_HOURS:
             text = two_digit_hours ? "^^" : "^";
@@ -714,6 +723,8 @@ static void update_mode(void) {
             ASSERT(false);
             break;
     }
+    #undef ADJUST_FOR_LARGE_FONT
+    #undef ADJUST_FOR_HIDDEN_SECONDS
     snprintf(s_edit_indicator_text, sizeof(s_edit_indicator_text), text);
     text_layer_set_text(s_text_layer_edit_indicator, s_edit_indicator_text);
     animation_schedule((Animation*)property_animation_create_layer_frame(
@@ -1036,6 +1047,10 @@ static void click_config_provider(void *context) {
 }
 
 
+/******************************************************************************
+ Graphics
+******************************************************************************/
+
 #define TEXT_COLOR GColorWhite
 #define BG_COLOR GColorBlack
 #define EMPTY_RING_COLOR GColorDarkGray
@@ -1076,7 +1091,7 @@ static void render_background(Layer *layer, GContext *ctx) {
 
 #if PBL_PLATFORM_EMERY  // Time2's bezel covers screen edges, so add a margin
     const int32_t margin = 10;
-    const GRect ring_bounds = grect_inset(bounds, (GEdgeInsets){margin, margin, margin, margin});
+    const GRect ring_bounds = grect_crop(bounds, margin);
 #else // !PBL_PLATFORM_EMERY
     const GRect ring_bounds = bounds;
 #endif // !PBL_PLATFORM_EMERY
@@ -1123,12 +1138,12 @@ static void render_background(Layer *layer, GContext *ctx) {
 #if PBL_RECT
     // central panel is an extra graphics_fill_rect, rather than the missing centre of graphics_fill_radial
     graphics_context_set_fill_color(ctx, BG_COLOR);
-    const GRect central_panel_rect = grect_inset(ring_bounds,
-        (GEdgeInsets){ring_thickness, ring_thickness, ring_thickness, ring_thickness});
+    const GRect central_panel_rect = grect_crop(ring_bounds, ring_thickness);
     graphics_fill_rect(ctx, central_panel_rect, corner_radius, GCornersAll);
 
 #if PBL_PLATFORM_EMERY
     // clip off the outer edges of the ring foreground to restore the margin
+    // TODO "If a parent layer has clipping enabled, all the children will be clipped to the frame of the parent."
     graphics_fill_rect(ctx, (GRect){  // top
         {bounds.origin.x, bounds.origin.y}, {bounds.size.w, margin}}, 0, GCornerNone);
     graphics_fill_rect(ctx, (GRect){  // left
@@ -1151,6 +1166,11 @@ static void render_background(Layer *layer, GContext *ctx) {
     }
 #endif // PBL_COLOR
 }
+
+
+/******************************************************************************
+ Main
+******************************************************************************/
 
 // Create the resources for the small icon at the top
 static void create_status_icon(Layer* parent, int16_t alarm_text_y) {
