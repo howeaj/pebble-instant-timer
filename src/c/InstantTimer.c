@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
+    - minute updates after -2min duration
     - animate app exit
     - some kind of tutorial or help mode?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
@@ -231,11 +232,9 @@ static void animate_scroll(Layer *layer, bool appear, bool from_below, bool* was
 
 #if PBL_RECT
 // quake 3 sqrt
-static float fast_sqrt(const float x)
-{
+static float fast_sqrt(const float x) {
     const float xhalf = 0.5f * x;
-    union
-    {
+    union {
         float x;
         int i;
     } u;
@@ -868,13 +867,51 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 #endif // PBL_COLOR
 }
 
-static void update_rate_timer_callback(void* data);
+static void update_tick_subscription(TimeUnits new_update_rate);
+static AppTimer* tick_reschedule_timer = NULL;
+
+// Timer callback which changes the rate of tick_handler t after its timer expires.
+// WARNING: `void* data`'s pointer value is directly interpreted as a TimeUnits, it isn't a pointer to a TimeUnits!
+static void update_rate_timer_callback(void* data) {
+    TRACE("update_rate_timer_minutes_callback");
+    tick_reschedule_timer = NULL;
+    update_tick_subscription((TimeUnits)data);
+}
+
+// schedule/deschedule a timer for the next call to update_tick_subscription()
+// timeout_ms 0 to deschedule
+static void schedule_tick_subscription_update(uint32_t timeout_ms, TimeUnits update_rate) {
+    static TimeUnits scheduled_update_rate = 0;
+    if (timeout_ms == 0) {
+        if (tick_reschedule_timer != NULL) {
+            app_timer_cancel(tick_reschedule_timer);
+            tick_reschedule_timer = NULL;
+        }
+    } else {
+        LOG("Scheduled update rate -> %d in %ums", update_rate, timeout_ms);
+        if (tick_reschedule_timer == NULL) {
+            tick_reschedule_timer = app_timer_register(timeout_ms, update_rate_timer_callback, (void*)update_rate);
+            ASSERT(tick_reschedule_timer != NULL);
+        } else {
+            if (scheduled_update_rate == update_rate) {
+                app_timer_reschedule(tick_reschedule_timer, timeout_ms);
+            } else {
+                app_timer_cancel(tick_reschedule_timer);
+                tick_reschedule_timer = app_timer_register(timeout_ms, update_rate_timer_callback, (void*)update_rate);
+                ASSERT(tick_reschedule_timer != NULL);
+            }
+        }
+    }
+    scheduled_update_rate = update_rate;
+}
 
 /** Control the state update rate.
     To save power, update as little as possible.
 
     We only want to update seconds if the user is probably looking:
         - if we're in "stopwatch mode" and 1min hasn't elapsed yet
+        - there's less than 3mins remaining on the timer
+        - todo less than 2mins overtime
         - if the alarm duration is very short (including after the alarm has expired; show looping overtime)
         - if there are any signs of user activity (buttons, accel-tap/shake, battery charger, TODO screen touch)
         - if the alarm is pulsing (especially because the overtime counter is below ALARM_PULSE_DURATION)
@@ -882,11 +919,11 @@ static void update_rate_timer_callback(void* data);
 static void update_tick_subscription(TimeUnits new_update_rate) {
     TRACE("update_tick_subscription");
     #define HIGH_RATE_TIMEOUT_MS (DEFAULT_BACKLIGHT_TIMEOUT_MS + LIGHT_FADE_TIME_MS)
-    #define SHORT_ALARM_S (120)
+    #define SHORT_ALARM_S (3 * SECONDS_PER_MINUTE)
     #define SHORT_STOPWATCH_S (60)
-    static AppTimer* update_rate_timer = NULL;
 
-    const bool is_short_alarm = ((s_state.alarm_duration > 0) && (s_state.alarm_duration <= SHORT_ALARM_S));
+    const time_t remaining = s_state.alarm_duration - s_state.elapsed_time;
+    const bool is_short_timer = ((s_state.alarm_duration > 0) && (remaining <= SHORT_ALARM_S));
 
     if (!s_state.is_counting) {
         // if paused, the only thing that can change is the alarm time, which only shows minutes
@@ -898,8 +935,8 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
             LOG("Forced disabled update rate");
             new_update_rate = MONTH_UNIT;
         }
-    } else if (alarm_is_pulsing() || is_short_alarm) {
-        // full rate while alarm is short or pulsing
+    } else if (alarm_is_pulsing() || is_short_timer) {
+        // full rate while timer is short or pulsing
         LOG("Forced second update rate");
         new_update_rate = SECOND_UNIT;
     }
@@ -911,7 +948,7 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
         LOG("Update rate changed to %d", new_update_rate);
     }
 
-    if ((new_update_rate == SECOND_UNIT) && !is_short_alarm) {
+    if ((new_update_rate == SECOND_UNIT) && !is_short_timer) {
         // set the timer to drop back to minutes
         uint32_t high_rate_timeout_ms;
         const bool is_short_stopwatch = (s_state.alarm_duration == 0) && (s_state.elapsed_time < SHORT_STOPWATCH_S);
@@ -925,25 +962,14 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
             high_rate_timeout_ms = HIGH_RATE_TIMEOUT_MS;
         }
 
-        if (update_rate_timer == NULL) {
-            update_rate_timer = app_timer_register(high_rate_timeout_ms, update_rate_timer_callback, NULL);
-        } else {
-            app_timer_reschedule(update_rate_timer, high_rate_timeout_ms);
-        }
-        LOG("Scheduled update rate reduction in %ums", high_rate_timeout_ms);
-    } else {
-        if (update_rate_timer != NULL) {
-            LOG("Unscheduled update rate reduction");
-            app_timer_cancel(update_rate_timer);
-            update_rate_timer = NULL;
-        }
+        schedule_tick_subscription_update(high_rate_timeout_ms, MINUTE_UNIT);
+    } else if ((new_update_rate == MINUTE_UNIT) && s_state.is_counting) {
+        // set the timer to go back to seconds
+        // +1 to make sure when the timer goes off we are <= SHORT_ALARM_S
+        schedule_tick_subscription_update((remaining + 1 - SHORT_ALARM_S) * MS_PER_S, SECOND_UNIT);
+    } else {  // unschedule
+        schedule_tick_subscription_update(0, 0);
     }
-}
-
-// Timer callback which reduces the rate of tick_handler to MINUTE_UNIT after its timer expires
-static void update_rate_timer_callback(void* data) {
-    TRACE("update_rate_timer_callback");
-    update_tick_subscription(MINUTE_UNIT);
 }
 
 static void battery_state_handler(BatteryChargeState charge) {
