@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
-    - minute updates after -2min duration
     - animate app exit
     - some kind of tutorial or help mode?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
@@ -910,8 +909,7 @@ static void schedule_tick_subscription_update(uint32_t timeout_ms, TimeUnits upd
 
     We only want to update seconds if the user is probably looking:
         - if we're in "stopwatch mode" and 1min hasn't elapsed yet
-        - there's less than 3mins remaining on the timer
-        - todo less than 2mins overtime
+        - there's less than 3mins remaining on the timer (and every repeat of the ring on overtime)
         - if the alarm duration is very short (including after the alarm has expired; show looping overtime)
         - if there are any signs of user activity (buttons, accel-tap/shake, battery charger, TODO screen touch)
         - if the alarm is pulsing (especially because the overtime counter is below ALARM_PULSE_DURATION)
@@ -922,9 +920,13 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
     #define SHORT_ALARM_S (3 * SECONDS_PER_MINUTE)
     #define SHORT_STOPWATCH_S (60)
 
-    const time_t remaining = s_state.alarm_duration - s_state.elapsed_time;
-    const bool is_short_timer = ((s_state.alarm_duration > 0) && (remaining <= SHORT_ALARM_S));
+    const bool is_timer_enabled = (s_state.alarm_duration > 0);
+    // Time until the elapsed time is close to a multiple of the alarm duration
+    // i.e. the green or red ring is close to completion.
+    const time_t time_to_next_alarm = (s_state.alarm_duration - (s_state.elapsed_time % s_state.alarm_duration));
+    const bool is_short_timer = is_timer_enabled && (time_to_next_alarm <= SHORT_ALARM_S);
 
+    // Override the new update rate in some circumstances
     if (!s_state.is_counting) {
         // if paused, the only thing that can change is the alarm time, which only shows minutes
         // so force a slower update rate than requested
@@ -941,6 +943,7 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
         new_update_rate = SECOND_UNIT;
     }
 
+    // set the new update rate
     if (s_update_rate != new_update_rate) {
         s_update_rate = new_update_rate;
         tick_timer_service_subscribe(new_update_rate, tick_handler);
@@ -948,27 +951,46 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
         LOG("Update rate changed to %d", new_update_rate);
     }
 
-    if ((new_update_rate == SECOND_UNIT) && !is_short_timer) {
-        // set the timer to drop back to minutes
-        uint32_t high_rate_timeout_ms;
-        const bool is_short_stopwatch = (s_state.alarm_duration == 0) && (s_state.elapsed_time < SHORT_STOPWATCH_S);
-        if (is_short_stopwatch) {
-            high_rate_timeout_ms = (uint32_t) MAX(HIGH_RATE_TIMEOUT_MS,
-                                                  ((int32_t)SHORT_STOPWATCH_S - (int32_t)s_state.elapsed_time) * MS_PER_S);
-        } else if (alarm_is_pulsing()){
-            high_rate_timeout_ms = (uint32_t) MAX(HIGH_RATE_TIMEOUT_MS,
-                                                  ABSDIFF(alarm_get_pulse_end_time(), time(NULL)) * MS_PER_S);
+    // schedule changing the update rate in future
+    if (!s_state.is_counting) {
+        schedule_tick_subscription_update(0, 0);  // unschedule; only woken by user activity
+    } else {  // is_counting
+        if (new_update_rate == SECOND_UNIT) {
+            // decide when to drop back to minutes
+            if (is_short_timer) {
+                // back to minutes when the timer expires
+                // (note actually, the "alarm_is_pulsing" condition will then kick in to stay on seconds)
+                schedule_tick_subscription_update(time_to_next_alarm * MS_PER_S, MINUTE_UNIT);
+            } else {  // !is_short_timer
+                uint32_t high_rate_timeout_ms;
+                const bool is_short_stopwatch = !is_timer_enabled && (s_state.elapsed_time < SHORT_STOPWATCH_S);
+                if (is_short_stopwatch) {
+                    // back to minutes when the stopwatch gets high enough
+                    high_rate_timeout_ms = (uint32_t) MAX(HIGH_RATE_TIMEOUT_MS,
+                                                          ((int32_t)SHORT_STOPWATCH_S - (int32_t)s_state.elapsed_time) * MS_PER_S);
+                } else if (alarm_is_pulsing()){
+                    // back to minutes when the alarm pulses expire automatically
+                    high_rate_timeout_ms = (uint32_t) MAX(HIGH_RATE_TIMEOUT_MS,
+                                                          ABSDIFF(alarm_get_pulse_end_time(), time(NULL)) * MS_PER_S);
+                } else {
+                    // back to minutes when the backlight turns off
+                    high_rate_timeout_ms = HIGH_RATE_TIMEOUT_MS;
+                }
+                schedule_tick_subscription_update(high_rate_timeout_ms, MINUTE_UNIT);
+            }
+        } else if (new_update_rate == MINUTE_UNIT) {
+            if (is_timer_enabled) {
+                // set the timer to go back to seconds when the is_short_timer condition will become true
+                schedule_tick_subscription_update((time_to_next_alarm + 1 - SHORT_ALARM_S) * MS_PER_S, SECOND_UNIT);
+            } else {
+                // stay on minutes indefinitely; back to seconds only on user activity
+                schedule_tick_subscription_update(0, 0);
+            }
         } else {
-            high_rate_timeout_ms = HIGH_RATE_TIMEOUT_MS;
+            // the only other new_update_rate is MONTH_UNIT, which only happens when !is_counting
+            ASSERT(false); // should be unreachable
+            schedule_tick_subscription_update(0, 0);
         }
-
-        schedule_tick_subscription_update(high_rate_timeout_ms, MINUTE_UNIT);
-    } else if ((new_update_rate == MINUTE_UNIT) && s_state.is_counting) {
-        // set the timer to go back to seconds
-        // +1 to make sure when the timer goes off we are <= SHORT_ALARM_S
-        schedule_tick_subscription_update((remaining + 1 - SHORT_ALARM_S) * MS_PER_S, SECOND_UNIT);
-    } else {  // unschedule
-        schedule_tick_subscription_update(0, 0);
     }
 }
 
