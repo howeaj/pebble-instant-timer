@@ -1,7 +1,7 @@
 {
   "name": "Instant Timer",
   "author": "howeaj",
-  "version": "1.5.0",
+  "version": "1.6",
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {},
@@ -28,10 +28,18 @@
     "resources": {
       "media": [
         {
-          "menuIcon": true,
+          "file": "images/app_icon.png",
           "type": "bitmap",
           "name": "APP_ICON",
-          "file": "images/app_icon.png"
+          "memoryFormat": "1Bit",
+          "menuIcon": true,
+          "targetPlatforms": ["aplite", "diorite", "flint"]
+        },
+        {
+          "file": "images/app_icon.png",
+          "type": "bitmap",
+          "name": "APP_ICON",
+          "targetPlatforms": ["basalt", "chalk", "emery", "gabbro"]
         },
         {
           "type": "bitmap",

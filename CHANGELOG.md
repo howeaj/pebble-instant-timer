@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.6
+
+Fix save icon on black&white platforms.
+Fix app launch icon on OG Pebble.
+
 ## 1.5
 
 Clarify app exit status with trash/save screenwipe
