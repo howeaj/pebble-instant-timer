@@ -1,7 +1,7 @@
 {
   "name": "Instant Timer",
   "author": "howeaj",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {},
@@ -121,6 +121,16 @@
             "emery",
             "gabbro"
           ]
+        },
+        {
+          "type": "bitmap",
+          "name": "SAVE_LARGE",
+          "file": "images/save_large.png"
+        },
+        {
+          "type": "bitmap",
+          "name": "TRASH",
+          "file": "images/trash.png"
         }
       ]
     }

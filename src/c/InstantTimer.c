@@ -83,6 +83,11 @@ static GBitmap* s_icon_save;
     static GBitmap* s_icon_tick;
 #endif // PBL_RECT
 
+// exit screen
+static BitmapLayer* s_exit_layer;
+static GBitmap* s_icon_trash;
+static GBitmap* s_icon_save_large;
+
 typedef enum IncrementMode_e {
     INCR_HOURS = 0,
     INCR_5MINS = 1,
@@ -755,6 +760,22 @@ static void vibe_for_start_stop(void) {
     vibes_enqueue_custom_pattern(pat);
 }
 
+static void animate_exit_screen(bool save, bool show) {
+    bitmap_layer_set_bitmap(s_exit_layer, save ? s_icon_save_large : s_icon_trash);
+
+    static bool was_visible = false;
+    animate_scroll((Layer*)s_exit_layer, show, !save, &was_visible);
+}
+
+static void create_exit_screen(Layer* parent) {
+    s_exit_layer = bitmap_layer_create(layer_get_frame(parent));
+    s_icon_trash = gbitmap_create_with_resource(RESOURCE_ID_TRASH);
+    s_icon_save_large = gbitmap_create_with_resource(RESOURCE_ID_SAVE_LARGE);
+    bitmap_layer_set_background_color(s_exit_layer, GColorBlack);
+    layer_add_child(parent, bitmap_layer_get_layer(s_exit_layer));
+    animate_exit_screen(true, false);
+}
+
 
 /******************************************************************************
  Handlers
@@ -841,9 +862,14 @@ static bool do_alarm_clear(void) {
     return cleared;
 }
 
+static void exit_handler(void* context) {
+    window_stack_pop(true);
+}
+
 static void do_exit(bool save) {
     s_save = save;
-    window_stack_pop(true);
+    animate_exit_screen(save, true);
+    app_timer_register(200, exit_handler, NULL);
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
@@ -1077,7 +1103,7 @@ static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
     if (!do_alarm_clear()) {
         increment_mode(false);
         if (s_mode < MODE_EXIT) {
-            window_stack_pop(true);
+            do_exit(true);
         } else {
             update_mode();
             update_action_bar();
@@ -1378,8 +1404,9 @@ static void main_window_load(Window *window) {
     // status bar
     s_status_bar = status_bar_layer_create();
     layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
-    // status_bar_layer_set_colors(s_status_bar, GColorBlack, GColorWhite);
-    // status_bar_layer_set_separator_mode(s_status_bar, StatusBarLayerSeparatorModeDotted);
+
+    // exit screen
+    create_exit_screen(window_layer);
 
     // business logic
     s_initialising = true;
@@ -1448,6 +1475,11 @@ static void main_window_unload(Window *window) {
 
     // status bar
     status_bar_layer_destroy(s_status_bar);
+
+    // exit screen
+    bitmap_layer_destroy(s_exit_layer);
+    gbitmap_destroy(s_icon_trash);
+    gbitmap_destroy(s_icon_save_large);
 
     // services
     tick_timer_service_unsubscribe();

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5
+
+Clarify app exit status with trash/save screenwipe
+
 ## 1.4
 
 Return to per-second updates whenever the green or red ring is within 3 minutes of completion
