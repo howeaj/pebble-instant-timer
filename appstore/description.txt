@@ -1,15 +1,14 @@
-A polished combination timer, alarm and stopwatch.
-
-Designed for quick-launch to set everyday timers for cooking, reminders and alarms.
+A polished combination timer, alarm and stopwatch designed for quick-launch.
+For everyday use for cooking, reminders and alarms.
 Packed with unique, detailed behaviour to optimise frequent use.
 
 Specifically, this does 3 things I couldn't find anywhere else:
     - Start counting immediately on launch
     - Show all 4 relevant values (alarm time, duration, remaining, elapsed) at all times
-    - Modify the duration at any point without having to pause/restart or confirm
+    - Modify the duration at any point without any pause or confirmation
 
 Full feature list:
-    - One-press operation; starts counting immediately on launch.
+    - Fast one-press operation; starts counting immediately on launch.
     - Single interface works simultaneously as an alarm, timer and/or stopwatch; no
        switching between modes (nor running them separately)
     - Modify the timer/alarm duration immediately anytime without a pause, restart or confirm.
@@ -56,10 +55,10 @@ Controls:
     - When alarm goes off, any button to dismiss it
 
 This app is great if you want to:
-    - Instantly set a stopwatch/timer running without looking in the middle of cooking,
+    - Set a stopwatch/timer running fast without looking in the middle of cooking,
        and then change it as you go along
     - Often quickly set an alarm to remind you about something in the near future
-    - Quickly set a wakeup alarm at a varying time just before you go to sleep
+    - Set a wakeup alarm quick at a varying time just before you go to sleep
     - Do all of the above with a single app using one quick-launch slot
 
 Use (a) different app(s) if you want:
