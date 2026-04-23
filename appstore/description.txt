@@ -7,39 +7,27 @@ Specifically, this does 3 things I couldn't find anywhere else:
     - Show all 4 relevant values (alarm time, duration, remaining, elapsed) at all times
     - Modify the duration at any point without any pause or confirmation
 
-Full feature list:
-    - Fast one-press operation; starts counting immediately on launch.
-    - Single interface works simultaneously as an alarm, timer and/or stopwatch; no
-       switching between modes (nor running them separately)
-    - Modify the timer/alarm duration immediately anytime without a pause, restart or confirm.
-    - Timer modification controls optimised for speed:
-           Increment by 1h, 5m or 1m. For very short timers can also increment by 30s (<5m) or 15s (<2m).
+Other features:
+    - Timer modification controls optimised for speed (1h, 5m, 1m increments)
     - Battery saving:
-        - Automatically switches between per-second and per-minute updates based on activity:
-            - Synchronised with system backlight (lit by button presses, tap/shake, battery charging).
-            - Keeps full-rate whenever alarm is ringing, first minute of stopwatch, and whenever
-               the timer/alarm duration is below 2 minutes.
-        - Zero power usage when running in background (no background worker, Wakeup API alarm)
-        - Automatically stops alarm vibe after 1 minute
-    - Runs in background, auto-opens for alarm.
-    - Counts overtime after the timer/alarm elapses.
+        - Auto switch between seconds/minutes update rate, synced with backlight and/or remaining time
+        - Zero background power use
+        - Auto-cancel alarm vibe after 1m
+    - Runs in background, auto-opens for alarm
+    - Counts overtime after alarm vibe
     - After expiry, set a new alarm from the same base just by increasing the duration again
-    - Short vibe on start/stop for blind operation.
-    - Alarm time or start time shown in system app menu.
+    - Short vibe on start/stop for blind operation
+    - Glance info in system app launcher
     - Pause, resume, restart, reset
-    - Supports all pebble platforms.
 
 Planned updates:
-    - Faster setting with touchscreen
-       (I'll implement this as soon as a touch screen API is available)
-    - User configuration to set colours, disable/modify battery saving mode,
-       and any other requested options
+    - Touchscreen control (as soon as API is available)
+    - App configuration (colours, battery saving options, any other requested features)
 
 Controls:
-    - Select/Back to choose which timer digit(s) to modify.
-       Note the available digits change as the duration increases.
-    - Up/Down to increment/decrement. Hold to repeat. Press down at 0 to wrap up.
-    - Select Long-press (or press while action bar shows the play/pause symbol)
+    - Select/Back to choose modification digits (15/30 seconds available while under 2/5mins)
+    - Up/Down to increment/decrement. Hold to repeat. Down at 0 wraps up.
+    - Select Long-press (or Press at lowest digit)
        to toggle pause/resume and enter "control mode":
         - Up (rewind icon) to restart the timer (i.e. set elapsed time to 0)
            while retaining the timer/alarm duration
@@ -52,7 +40,7 @@ Controls:
         - Down (X icon) to discard timer/alarm and exit the app
         - Select (> icon) to return to timer modification
     - Back Long-press to save and exit
-    - When alarm goes off, any button to dismiss it
+    - Any button to dismiss alarm bell
 
 This app is great if you want to:
     - Set a stopwatch/timer running fast without looking in the middle of cooking,
