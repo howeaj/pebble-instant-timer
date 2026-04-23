@@ -949,7 +949,10 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
     const bool is_timer_enabled = (s_state.alarm_duration > 0);
     // Time until the elapsed time is close to a multiple of the alarm duration
     // i.e. the green or red ring is close to completion.
-    const time_t time_to_next_alarm = (s_state.alarm_duration - (s_state.elapsed_time % s_state.alarm_duration));
+    const time_t time_to_next_alarm = (
+        is_timer_enabled ? (s_state.alarm_duration - (s_state.elapsed_time % s_state.alarm_duration))
+        : 0  // note: this condition avoids % 0
+    );
     const bool is_short_timer = is_timer_enabled && (time_to_next_alarm <= SHORT_ALARM_S);
 
     // Override the new update rate in some circumstances
@@ -1200,7 +1203,7 @@ static void render_background(Layer *layer, GContext *ctx) {
 #endif // PBL_RECT
 
     // ring foreground
-    if (s_state.alarm_duration) {
+    if (s_state.alarm_duration != 0) {
         graphics_context_set_fill_color(ctx, is_overtime ? OVERTIME_COLOR : EMPTY_RING_COLOR);
         graphics_fill_radial(ctx, ring_foreground_bounds, GOvalScaleModeFillCircle,
             PBL_IF_ROUND_ELSE(ring_thickness, ring_foreground_bounds.size.w),

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7
+
+Fix crash on Pebble Time 2!
+
 ## 1.6
 
 Fix save icon on black&white platforms.

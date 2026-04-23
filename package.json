@@ -1,7 +1,7 @@
 {
   "name": "Instant Timer",
   "author": "howeaj",
-  "version": "1.6",
+  "version": "1.7",
   "keywords": ["pebble-app"],
   "private": true,
   "dependencies": {},
