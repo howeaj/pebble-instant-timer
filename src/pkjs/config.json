@@ -46,7 +46,7 @@
         "messageKey": "actionBarBgColor",
         "label": "Action bar background",
         "defaultValue": "000000",
-        "capabilities": ["NOT_COLOR"],
+        "capabilities": ["RECT"],
         "allowGray": true
       },
       {

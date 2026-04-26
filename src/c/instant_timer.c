@@ -245,6 +245,11 @@ static int32_t grect_diagonal(GRect rect) {
 }
 #endif // PBL_RECT
 
+// set the value at `index` in `bitmap`'s palette to `color`
+static void gbitmap_set_color(GBitmap* bitmap, size_t index, GColor color) {
+    gbitmap_get_palette(bitmap)[index] = color;
+}
+
 
 /******************************************************************************
  Persistence
@@ -1117,7 +1122,6 @@ static void draw_bell_background(GPoint centre, GContext *ctx) {
         centre.x - (size.w / 2),
         centre.y - (size.h / 2)
     };
-    graphics_context_set_fill_color(ctx, config_get()->bgColorImage);
     gdraw_command_image_draw(ctx, s_icon_bell, origin);
 }
 
@@ -1220,23 +1224,47 @@ static void render_background(Layer *layer, GContext *ctx) {
 #endif // PBL_COLOR
 }
 
-static void set_text_colors(void) {
-    const GColor text_color = config_get()->textColor;
+static void set_text_colors(const Config* config) {
+    const GColor text_color = config->textColor;
+    text_layer_set_text_color(s_text_layer_edit_indicator, text_color);
+    text_layer_set_text_color(s_text_layer_alarm_duration, text_color);
+    text_layer_set_text_color(s_text_layer_alarm_time,     text_color);
+    text_layer_set_text_color(s_text_layer_big_remaining,  text_color);
+    text_layer_set_text_color(s_text_layer_big_elapsed,    text_color);
+    text_layer_set_text_color(s_text_layer_small_elapsed,  text_color);
+}
 
-    #define SET_TEXT_COLOR(name) text_layer_set_text_color(name, text_color);
-    SET_TEXT_COLOR(s_text_layer_edit_indicator);
-    SET_TEXT_COLOR(s_text_layer_alarm_duration);
-    SET_TEXT_COLOR(s_text_layer_alarm_time);
-    SET_TEXT_COLOR(s_text_layer_big_remaining);
-    SET_TEXT_COLOR(s_text_layer_big_elapsed);
-    SET_TEXT_COLOR(s_text_layer_small_elapsed);
-    #undef SET_TEXT_COLOR
+static void set_bitmap_colors(const Config* config) {
+    const size_t color_index = 1;  // all my icons' palettes are {0: Clear, 1: White}
+
+    // action bar
+    const GColor action_icon_color = config->actionBarIconColor;
+    gbitmap_set_color(s_icon_refresh, color_index, action_icon_color);
+    gbitmap_set_color(s_icon_pause,   color_index, action_icon_color);
+    gbitmap_set_color(s_icon_start,   color_index, action_icon_color);
+    gbitmap_set_color(s_icon_delete,  color_index, action_icon_color);
+    gbitmap_set_color(s_icon_save,    color_index, action_icon_color);
+    gbitmap_set_color(s_icon_right,   color_index, action_icon_color);
+    gbitmap_set_color(s_icon_up,      color_index, action_icon_color);
+    gbitmap_set_color(s_icon_down,    color_index, action_icon_color);
+#if PBL_RECT
+    gbitmap_set_color(s_icon_tick,    color_index, action_icon_color);
+#endif // PBL_RECT
+
+    // status
+    const GColor text_color = config->textColor;
+    gbitmap_set_color(s_status_icon_alarm, color_index, text_color);
+    gbitmap_set_color(s_status_icon_alert, color_index, text_color);
+    gbitmap_set_color(s_status_icon_pause, color_index, text_color);
+
+    // TODO draw_bell_background
 }
 
 // Handle new app config submission
 static void new_config_handler(const Config* config) {
     UNUSED(config);
-    set_text_colors();
+    set_text_colors(config);
+    set_bitmap_colors(config);
 
 #if PBL_RECT
     action_bar_layer_set_background_color(s_action_bar, config->actionBarBgColor);
@@ -1315,7 +1343,6 @@ static void create_text_layout(Layer* parent) {
 
     const int16_t second_text_y = first_text_y + small_text_h + spacing;
     const int16_t main_text_y = second_text_y + small_text_h + (spacing * 2);
-    const GColor text_color = config_get()->textColor;
 
     create_status_icon(parent, status_icon_bottom_y);
 
@@ -1352,7 +1379,6 @@ static void create_text_layout(Layer* parent) {
         text_layer_set_text_alignment(s_text_layer_big_##name, GTextAlignmentCenter); \
         text_layer_set_font(s_text_layer_big_##name, main_text_font); \
         text_layer_set_background_color(s_text_layer_big_##name, GColorClear); \
-        text_layer_set_text_color(s_text_layer_big_##name, text_color); \
         layer_add_child(parent, text_layer_get_layer(s_text_layer_big_##name)); \
     MACRO_END
 
@@ -1368,8 +1394,6 @@ static void create_text_layout(Layer* parent) {
     #undef s_small_elapsed_text
 
     #undef SMALL_TEXT
-
-    set_text_colors();
 }
 
 static void main_window_load(Window *window) {
@@ -1440,6 +1464,8 @@ static void main_window_load(Window *window) {
     update_tick_subscription(SECOND_UNIT);
     accel_tap_service_subscribe(accel_tap_handler);
     battery_state_service_subscribe(battery_state_handler);
+
+    new_config_handler(config_get());
 
     s_initialising = false;
 }

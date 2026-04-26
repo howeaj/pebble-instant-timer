@@ -5,6 +5,7 @@
 
 #include "config.h"
 
+#include <pebble.h>
 
 #include "macros.h"
 #include "persist_keys.h"
