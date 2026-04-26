@@ -1,27 +1,14 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
-    - animate app exit
     - some kind of tutorial or help mode?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
     - configuration via clay
-        - all colours
         - disable battery saving rate reduction (or change its timeout)
-        - palletize .pngs with ImageMagick
-            convert myimage.png \
-                -adaptive-resize '144x168>' \
-                -fill '#FFFFFF00' -opaque none \
-                -dither FloydSteinberg \
-                -remap pebble_colors_64.gif \
-                -define png:compression-level=9 -define png:compression-strategy=0 \
-                -define png:exclude-chunk=all \
-                myimage.pbl.png
     - touchscreen control
         - fast timer/alarm setting
         - treat as activity for update_tick_subscription
     - investigate https://github.com/pebble-hacks/pebble_glancing_demo/blob/master/src/glancing_api.h
-    - fix caret_right (bottom is cut off)
-        - just edit these icons in raster
 */
 
 #include <math.h>
@@ -30,7 +17,9 @@
 #include <time.h>
 
 #define DEBUG 0  // TODO disable for release
-#include "Macros.h"
+#include "config.h"
+#include "macros.h"
+#include "persist_keys.h"
 
 
 #define LONG_CLICK_DURATION (500)  // duration for long click events
@@ -106,7 +95,7 @@ typedef enum IncrementMode_e {
 static int32_t s_mode = MODE_HOURS;
 
 // app state that needs persistence
-// affects PERSIST_VERSION
+#define PERSIST_TIMER_STATE_VERSION (4)  // The current persistent storage version. Increment when making changes to stored data.
 typedef struct State_s {
     time_t alarm_duration;
     time_t start_time;
@@ -261,42 +250,35 @@ static int32_t grect_diagonal(GRect rect) {
  Persistence
 ******************************************************************************/
 
-#define PERSIST_VERSION (4)  // The current persistent storage version. Increment when making changes to stored data.
-
-// persistent storage keys
-#define PERSIST_KEY_VERSION (0)  // key for the version of the remaining storage layout
-#define PERSIST_KEY_STATE   (1)  // key for s_state
-
-
 static bool is_persist_written_and_current_version(void) {
-    return persist_read_int(PERSIST_KEY_VERSION) == PERSIST_VERSION;
+    return persist_read_int(PERSIST_KEY_TIMER_VERSION) == PERSIST_TIMER_STATE_VERSION;
 }
 
 /// Return true if data was loaded
 static bool stopwatch_load(void){
     StatusCode status = E_DOES_NOT_EXIST;
     if (is_persist_written_and_current_version()){
-        status = persist_read_data(PERSIST_KEY_STATE, &s_state, sizeof(s_state));
+        status = persist_read_data(PERSIST_KEY_TIMER_STATE, &s_state, sizeof(s_state));
         ASSERT(status == sizeof(s_state));
     }
     return status == sizeof(s_state);
 }
 
 static void stopwatch_save(void){
-    StatusCode status = persist_write_data(PERSIST_KEY_STATE, &s_state, sizeof(s_state));
+    StatusCode status = persist_write_data(PERSIST_KEY_TIMER_STATE, &s_state, sizeof(s_state));
     ASSERT(status == sizeof(s_state));
 
     if (status == sizeof(s_state)) {
-        status = persist_write_int(PERSIST_KEY_VERSION, PERSIST_VERSION);
+        status = persist_write_int(PERSIST_KEY_TIMER_VERSION, PERSIST_TIMER_STATE_VERSION);
         ASSERT(status == sizeof(int32_t));
     }
 }
 
 static void stopwatch_delete(void){
-    StatusCode status = persist_delete(PERSIST_KEY_STATE);
+    StatusCode status = persist_delete(PERSIST_KEY_TIMER_STATE);
     ASSERT((status == S_TRUE) || (status == E_DOES_NOT_EXIST));
 
-    status = persist_delete(PERSIST_KEY_VERSION);
+    status = persist_delete(PERSIST_KEY_TIMER_VERSION);
     ASSERT((status == S_TRUE) || (status == E_DOES_NOT_EXIST));
 }
 
@@ -1128,13 +1110,6 @@ static void click_config_provider(void *context) {
  Graphics
 ******************************************************************************/
 
-#define TEXT_COLOR GColorWhite
-#define BG_COLOR GColorBlack
-#define EMPTY_RING_COLOR GColorDarkGray
-#define REMAINING_COLOR GColorGreen
-#define OVERTIME_COLOR PBL_IF_COLOR_ELSE(GColorRed, GColorGreen)
-#define BG_COLOR_PAUSED GColorBulgarianRose
-
 #if PBL_COLOR
 static void draw_bell_background(GPoint centre, GContext *ctx) {
     const GSize size = gdraw_command_image_get_bounds_size(s_icon_bell);
@@ -1142,14 +1117,14 @@ static void draw_bell_background(GPoint centre, GContext *ctx) {
         centre.x - (size.w / 2),
         centre.y - (size.h / 2)
     };
-    graphics_context_set_fill_color(ctx, BG_COLOR_PAUSED);
+    graphics_context_set_fill_color(ctx, config_get()->bgColorImage);
     gdraw_command_image_draw(ctx, s_icon_bell, origin);
 }
 
 static void draw_pause_background(GPoint centre, int16_t central_panel_radius, GContext *ctx) {
     // the size of one pause rect
     const GSize pause_size = {central_panel_radius / 2.5, central_panel_radius * 1.5};
-    graphics_context_set_fill_color(ctx, BG_COLOR_PAUSED);
+    graphics_context_set_fill_color(ctx, config_get()->bgColorImage);
     GPoint pause_origin = {centre.x - (pause_size.w * 1.5), centre.y - (pause_size.h / 2)};
     graphics_fill_rect(ctx, (GRect){.origin=pause_origin, .size=pause_size}, 2, GCornersAll);
     pause_origin.x += pause_size.w * 2;
@@ -1161,9 +1136,10 @@ static void draw_pause_background(GPoint centre, int16_t central_panel_radius, G
 // Render background elements, including the progress ring
 static void render_background(Layer *layer, GContext *ctx) {
     GRect bounds = layer_get_bounds(layer);
+    const Config* config = config_get();
 
     // empty background
-    graphics_context_set_fill_color(ctx, BG_COLOR);
+    graphics_context_set_fill_color(ctx, config->bgColor);
     graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
 #if PBL_PLATFORM_EMERY  // Time2's bezel covers screen edges, so add a margin
@@ -1183,7 +1159,7 @@ static void render_background(Layer *layer, GContext *ctx) {
     const bool is_overtime = s_state.alarm_duration && (s_state.elapsed_time >= s_state.alarm_duration);
 
     // ring background
-    graphics_context_set_fill_color(ctx, is_overtime ? EMPTY_RING_COLOR : REMAINING_COLOR);
+    graphics_context_set_fill_color(ctx, is_overtime ? config->ringColorEmpty : config->ringColorRemaining);
 #if PBL_ROUND
     graphics_fill_radial(ctx, ring_bounds, GOvalScaleModeFillCircle, ring_thickness,
                          DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
@@ -1204,7 +1180,7 @@ static void render_background(Layer *layer, GContext *ctx) {
 
     // ring foreground
     if (s_state.alarm_duration != 0) {
-        graphics_context_set_fill_color(ctx, is_overtime ? OVERTIME_COLOR : EMPTY_RING_COLOR);
+        graphics_context_set_fill_color(ctx, is_overtime ? config->ringColorOvertime : config->ringColorEmpty);
         graphics_fill_radial(ctx, ring_foreground_bounds, GOvalScaleModeFillCircle,
             PBL_IF_ROUND_ELSE(ring_thickness, ring_foreground_bounds.size.w),
             DEG_TO_TRIGANGLE(0),
@@ -1214,7 +1190,7 @@ static void render_background(Layer *layer, GContext *ctx) {
 
 #if PBL_RECT
     // central panel is an extra graphics_fill_rect, rather than the missing centre of graphics_fill_radial
-    graphics_context_set_fill_color(ctx, BG_COLOR);
+    graphics_context_set_fill_color(ctx, config->bgColor);
     const GRect central_panel_rect = grect_crop(ring_bounds, ring_thickness);
     graphics_fill_rect(ctx, central_panel_rect, corner_radius, GCornersAll);
 
@@ -1242,6 +1218,32 @@ static void render_background(Layer *layer, GContext *ctx) {
         draw_bell_background(centre, ctx);
     }
 #endif // PBL_COLOR
+}
+
+static void set_text_colors(void) {
+    const GColor text_color = config_get()->textColor;
+
+    #define SET_TEXT_COLOR(name) text_layer_set_text_color(name, text_color);
+    SET_TEXT_COLOR(s_text_layer_edit_indicator);
+    SET_TEXT_COLOR(s_text_layer_alarm_duration);
+    SET_TEXT_COLOR(s_text_layer_alarm_time);
+    SET_TEXT_COLOR(s_text_layer_big_remaining);
+    SET_TEXT_COLOR(s_text_layer_big_elapsed);
+    SET_TEXT_COLOR(s_text_layer_small_elapsed);
+    #undef SET_TEXT_COLOR
+}
+
+// Handle new app config submission
+static void new_config_handler(const Config* config) {
+    UNUSED(config);
+    set_text_colors();
+
+#if PBL_RECT
+    action_bar_layer_set_background_color(s_action_bar, config->actionBarBgColor);
+#endif // PBL_RECT
+    status_bar_layer_set_colors(s_status_bar, config->statusBarBgColor, config->statusBarTextColor);
+
+    layer_mark_dirty(window_get_root_layer(s_main_window));
 }
 
 
@@ -1313,6 +1315,7 @@ static void create_text_layout(Layer* parent) {
 
     const int16_t second_text_y = first_text_y + small_text_h + spacing;
     const int16_t main_text_y = second_text_y + small_text_h + (spacing * 2);
+    const GColor text_color = config_get()->textColor;
 
     create_status_icon(parent, status_icon_bottom_y);
 
@@ -1323,7 +1326,6 @@ static void create_text_layout(Layer* parent) {
         text_layer_set_text_alignment(s_text_layer_##name, GTextAlignmentCenter); \
         text_layer_set_font(s_text_layer_##name, small_text_font); \
         text_layer_set_background_color(s_text_layer_##name, GColorClear); \
-        text_layer_set_text_color(s_text_layer_##name, TEXT_COLOR); \
     MACRO_END
 
     // alarm time
@@ -1350,7 +1352,7 @@ static void create_text_layout(Layer* parent) {
         text_layer_set_text_alignment(s_text_layer_big_##name, GTextAlignmentCenter); \
         text_layer_set_font(s_text_layer_big_##name, main_text_font); \
         text_layer_set_background_color(s_text_layer_big_##name, GColorClear); \
-        text_layer_set_text_color(s_text_layer_big_##name, TEXT_COLOR); \
+        text_layer_set_text_color(s_text_layer_big_##name, text_color); \
         layer_add_child(parent, text_layer_get_layer(s_text_layer_big_##name)); \
     MACRO_END
 
@@ -1366,10 +1368,15 @@ static void create_text_layout(Layer* parent) {
     #undef s_small_elapsed_text
 
     #undef SMALL_TEXT
+
+    set_text_colors();
 }
 
 static void main_window_load(Window *window) {
     TRACE("main_window_load");
+
+    config_init(new_config_handler);
+
     Layer *window_layer = window_get_root_layer(window);
 
     // background

@@ -2,9 +2,13 @@
   "name": "Instant Timer",
   "author": "howeaj",
   "version": "1.7",
-  "keywords": ["pebble-app"],
+  "keywords": [
+    "pebble-app"
+  ],
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "@rebble/clay": "^1.0.8"
+  },
   "pebble": {
     "displayName": "Instant Timer",
     "uuid": "92860832-e162-49d5-bd89-81c92c0fe40c",
@@ -23,7 +27,16 @@
       "watchface": false
     },
     "messageKeys": [
-      "dummy"
+      "textColor",
+      "bgColor",
+      "bgColorImage",
+      "ringColorEmpty",
+      "ringColorRemaining",
+      "ringColorOvertime",
+      "statusBarBgColor",
+      "statusBarTextColor",
+      "actionBarBgColor",
+      "actionBarIconColor"
     ],
     "resources": {
       "media": [
@@ -33,13 +46,22 @@
           "name": "APP_ICON",
           "memoryFormat": "1Bit",
           "menuIcon": true,
-          "targetPlatforms": ["aplite", "diorite", "flint"]
+          "targetPlatforms": [
+            "aplite",
+            "diorite",
+            "flint"
+          ]
         },
         {
           "file": "images/app_icon.png",
           "type": "bitmap",
           "name": "APP_ICON",
-          "targetPlatforms": ["basalt", "chalk", "emery", "gabbro"]
+          "targetPlatforms": [
+            "basalt",
+            "chalk",
+            "emery",
+            "gabbro"
+          ]
         },
         {
           "type": "bitmap",

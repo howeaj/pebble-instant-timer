@@ -1,0 +1,93 @@
+[
+  {
+    "type": "heading",
+    "defaultValue": "Instant Timer config"
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Colours"
+      },
+      {
+        "type": "color",
+        "messageKey": "textColor",
+        "label": "Text",
+        "defaultValue": "ffffff"
+      },
+      {
+        "type": "color",
+        "messageKey": "bgColor",
+        "label": "Background",
+        "defaultValue": "000000"
+      },
+      {
+        "type": "color",
+        "messageKey": "bgColorImage",
+        "label": "Background pause/bell images",
+        "defaultValue": "550000",
+        "capabilities": ["COLOR"]
+      },
+      {
+        "type": "color",
+        "messageKey": "statusBarBgColor",
+        "label": "Status bar background",
+        "defaultValue": "000000"
+      },
+      {
+        "type": "color",
+        "messageKey": "statusBarTextColor",
+        "label": "Status bar text",
+        "defaultValue": "ffffff"
+      },
+      {
+        "type": "color",
+        "messageKey": "actionBarBgColor",
+        "label": "Action bar background",
+        "defaultValue": "000000",
+        "capabilities": ["NOT_COLOR"],
+        "allowGray": true
+      },
+      {
+        "type": "color",
+        "messageKey": "actionBarIconColor",
+        "label": "Action bar icons",
+        "defaultValue": "ffffff"
+      },
+      {
+        "type": "color",
+        "messageKey": "ringColorEmpty",
+        "label": "Progress ring - Empty",
+        "defaultValue": "555555",
+        "allowGray": true
+      },
+      {
+        "type": "color",
+        "messageKey": "ringColorRemaining",
+        "label": "Progress ring - Remaining",
+        "defaultValue": "00ff00",
+        "allowGray": true
+      },
+      {
+        "type": "color",
+        "messageKey": "ringColorOvertime",
+        "label": "Progress ring - Overtime",
+        "defaultValue": "ff0000",
+        "capabilities": ["COLOR"]
+      },
+            {
+        "type": "color",
+        "messageKey": "ringColorOvertime",
+        "label": "Progress ring - Overtime",
+        "defaultValue": "555555",
+        "capabilities": ["NOT_COLOR"],
+        "allowGray": true
+      },
+      {
+        "type": "submit",
+        "defaultValue": "Save"
+      }
+    ]
+  }
+]
