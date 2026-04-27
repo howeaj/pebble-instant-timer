@@ -11,48 +11,99 @@
         "defaultValue": "Colours"
       },
       {
-        "type": "color",
-        "messageKey": "textColor",
-        "label": "Text",
-        "defaultValue": "ffffff"
+        "type": "select",
+        "messageKey": "theme",
+        "label": "Theme",
+        "defaultValue": "Dark",
+        "capabilities": ["COLOR"],
+        "options": [
+          {
+            "label": "Dark",
+            "value": "Dark"
+          },
+          {
+            "label": "Light",
+            "value": "Light"
+          },
+          {
+            "label": "Green",
+            "value": "Green"
+          },
+          {
+            "label": "Blue",
+            "value": "Blue"
+          },
+          {
+            "label": "Custom",
+            "value": "Custom"
+          }
+        ]
+      },
+      {
+        "type": "select",
+        "messageKey": "theme",
+        "label": "Theme",
+        "defaultValue": "Dark",
+        "description": "Select a theme, or customise individual colours below",
+        "capabilities": ["NOT_COLOR"],
+        "options": [
+          {
+            "label": "Dark",
+            "value": "Dark"
+          },
+          {
+            "label": "Light",
+            "value": "Light"
+          },
+          {
+            "label": "Custom",
+            "value": "Custom"
+          }
+        ]
       },
       {
         "type": "color",
         "messageKey": "bgColor",
-        "label": "Background",
+        "label": "Background - Main panel",
         "defaultValue": "000000"
-      },
-      {
-        "type": "color",
-        "messageKey": "bgColorImage",
-        "label": "Background pause/bell images",
-        "defaultValue": "550000",
-        "capabilities": ["COLOR"]
-      },
-      {
-        "type": "color",
-        "messageKey": "statusBarBgColor",
-        "label": "Status bar background",
-        "defaultValue": "000000"
-      },
-      {
-        "type": "color",
-        "messageKey": "statusBarTextColor",
-        "label": "Status bar text",
-        "defaultValue": "ffffff"
       },
       {
         "type": "color",
         "messageKey": "actionBarBgColor",
-        "label": "Action bar background",
+        "label": "Background - Action bar",
         "defaultValue": "000000",
         "capabilities": ["RECT"],
         "allowGray": true
       },
       {
         "type": "color",
+        "messageKey": "statusBarBgColor",
+        "label": "Background - Status bar",
+        "defaultValue": "000000"
+      },
+      {
+        "type": "color",
+        "messageKey": "bgColorImage",
+        "label": "Background - Main panel pause/bell",
+        "defaultValue": "550000",
+        "capabilities": ["COLOR"]
+      },
+      {
+        "type": "color",
+        "messageKey": "textColor",
+        "label": "Foreground - Main panel",
+        "defaultValue": "ffffff"
+      },
+      {
+        "type": "color",
         "messageKey": "actionBarIconColor",
-        "label": "Action bar icons",
+        "label": "Foreground - Action bar",
+        "defaultValue": "ffffff"
+      },
+      {
+        "type": "color",
+        "messageKey": "statusBarTextColor",
+        "label": "Foreground - Status bar",
         "defaultValue": "ffffff"
       },
       {
@@ -72,6 +123,7 @@
       {
         "type": "color",
         "messageKey": "ringColorOvertime",
+        "id": "ringColorOvertimeColor",
         "label": "Progress ring - Overtime",
         "defaultValue": "ff0000",
         "capabilities": ["COLOR"]
@@ -79,6 +131,7 @@
             {
         "type": "color",
         "messageKey": "ringColorOvertime",
+        "id": "ringColorOvertimeBw",
         "label": "Progress ring - Overtime",
         "defaultValue": "555555",
         "capabilities": ["NOT_COLOR"],
