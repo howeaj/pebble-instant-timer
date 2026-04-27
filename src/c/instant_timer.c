@@ -34,9 +34,9 @@ static Layer* s_bg_layer;
 static Layer* s_duration_layer;
 
 #if PBL_COLOR
-    static GDrawCommandImage* s_icon_bell;
-    static GDrawCommandImage* s_icon_bell_l;
-    static GDrawCommandImage* s_icon_bell_r;
+    static GBitmap* s_icon_bell;
+    static GBitmap* s_icon_bell_l;
+    static GBitmap* s_icon_bell_r;
 #endif // PBL_COLOR
 
 static BitmapLayer* s_status_icon_layer;
@@ -1117,12 +1117,14 @@ static void click_config_provider(void *context) {
 
 #if PBL_COLOR
 static void draw_bell_background(GPoint centre, GContext *ctx) {
-    const GSize size = gdraw_command_image_get_bounds_size(s_icon_bell);
-    const GPoint origin = {
-        centre.x - (size.w / 2),
-        centre.y - (size.h / 2)
+    const GRect bounds = gbitmap_get_bounds(s_icon_bell);
+    const GRect frame = {
+        .origin = {centre.x - (bounds.size.w / 2),
+                   centre.y - (bounds.size.h / 2)},
+        .size = bounds.size
     };
-    gdraw_command_image_draw(ctx, s_icon_bell, origin);
+    graphics_context_set_compositing_mode(ctx, GCompOpSet); // enable transparency
+    graphics_draw_bitmap_in_rect(ctx, s_icon_bell, frame);
 }
 
 static void draw_pause_background(GPoint centre, int16_t central_panel_radius, GContext *ctx) {
@@ -1235,7 +1237,9 @@ static void set_text_colors(const Config* config) {
 }
 
 static void set_bitmap_colors(const Config* config) {
-    const size_t color_index = 1;  // all my icons' palettes are {0: Clear, 1: White}
+    // All my bitmaps' palettes are {0: Clear, 1: White}
+    // This seems to be because they are white; if black, they are {0: Black, 1: Clear}
+    const size_t color_index = 1;
 
     // action bar
     const GColor action_icon_color = config->actionBarIconColor;
@@ -1257,7 +1261,12 @@ static void set_bitmap_colors(const Config* config) {
     gbitmap_set_color(s_status_icon_alert, color_index, text_color);
     gbitmap_set_color(s_status_icon_pause, color_index, text_color);
 
-    // TODO draw_bell_background
+#if PBL_COLOR
+    // draw_bell_background
+    const GColor bell_color = config->bgColorImage;
+    gbitmap_set_color(s_icon_bell_l, color_index, bell_color);
+    gbitmap_set_color(s_icon_bell_r, color_index, bell_color);
+#endif // PBL_COLOR
 }
 
 // Handle new app config submission
@@ -1405,8 +1414,8 @@ static void main_window_load(Window *window) {
 
     // background
 #if PBL_COLOR
-    s_icon_bell_l = gdraw_command_image_create_with_resource(RESOURCE_ID_BELL_L);
-    s_icon_bell_r = gdraw_command_image_create_with_resource(RESOURCE_ID_BELL_R);
+    s_icon_bell_l = gbitmap_create_with_resource(RESOURCE_ID_BELL_L);
+    s_icon_bell_r = gbitmap_create_with_resource(RESOURCE_ID_BELL_R);
     s_icon_bell = s_icon_bell_l;
 #endif // PBL_COLOR
     s_bg_layer = layer_create(reduce_frame_for_system_bars(layer_get_frame(window_layer)));
@@ -1475,8 +1484,8 @@ static void main_window_unload(Window *window) {
 
     // background
 #if PBL_COLOR
-    gdraw_command_image_destroy(s_icon_bell_l);
-    gdraw_command_image_destroy(s_icon_bell_r);
+    gbitmap_destroy(s_icon_bell_l);
+    gbitmap_destroy(s_icon_bell_r);
 #endif // PBL_COLOR
     layer_destroy(s_bg_layer);
 
