@@ -154,11 +154,40 @@
         "label": "Underlay - Pause/Bell",
         "defaultValue": "550000",
         "capabilities": ["COLOR"]
-      },
-      {
-        "type": "submit",
-        "defaultValue": "Save"
       }
     ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
+        "defaultValue": "Touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+      },
+      {
+        "type": "toggle",
+        "messageKey": "enableTouch",
+        "label": "Enable",
+        "defaultValue": true,
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+      },
+      {
+        "type": "slider",
+        "messageKey": "touchInputTimeoutDeciseconds",
+        "label": "Input timeout (seconds)",
+        "description": "Cancel after this long without a touch",
+        "defaultValue": 2.0,
+        "min": 0.5,
+        "max": 5.0,
+        "step": 0.5,
+        "group": "touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+      }
+    ]
+  },
+  {
+    "type": "submit",
+    "defaultValue": "Save"
   }
 ]

@@ -1,0 +1,497 @@
+// Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
+
+// A radial touch selection layer
+
+
+#define DEBUG 0  // TODO disable
+
+#include "touch.h"
+
+#include <pebble.h>
+
+#if PBL_TOUCH
+
+#include "config.h"
+#include "macros.h"
+
+
+// the threshold between inner and outer ring
+#define THRESHOLD_RADIUS (PBL_DISPLAY_WIDTH / 4)
+
+
+static Layer* s_layer = NULL;
+static AppTimer* s_cancel_timer = NULL;
+
+static TouchSelectionCallback s_callback = NULL;
+
+typedef enum SelectMode {
+    SELECTMODE_NONE = 0,
+    SELECTMODE_HOUR,
+    SELECTMODE_MINUTE,
+} SelectMode;
+static SelectMode s_select_mode = SELECTMODE_NONE;
+
+static bool s_is_duration = false;
+static int8_t s_selected_hours = -1;
+static int8_t s_selected_minutes = -1;
+static uint32_t s_selected_angle = 0;
+
+typedef enum TouchArea {
+    TOUCH_AREA_NONE = 0,
+    TOUCH_AREA_INNER,
+    TOUCH_AREA_OUTER
+} TouchArea;
+static TouchArea s_touch_area = TOUCH_AREA_NONE;
+
+
+/******************************************************************************
+ Generic funcs
+******************************************************************************/
+
+// Fill a circle with color
+static inline void graphics_color_circle(GContext* ctx, GPoint p, uint16_t radius, GColor color){
+    graphics_context_set_fill_color(ctx, color);
+    graphics_fill_circle(ctx, p, radius);
+}
+
+// TODO Fill a radial with color
+// static inline void graphics_color_circle(GContext* ctx, GRect bounds, GColor color){
+//     graphics_context_set_fill_color(ctx, color);
+//     const GRect bounds = {
+//         .origin = {0, 0}
+//         .size = {}
+//     }
+//     graphics_fill_circle(ctx, p, radius);
+//     graphics_fill_radial(ctx, bounds, GOvalScaleModeFillCircle, ring_thickness,
+//                          DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
+// }
+
+// Fill a rect with color
+static inline void graphics_color_rect(GContext *ctx, GRect rect, uint16_t corner_radius,
+                                GCornerMask corner_mask, GColor color){
+    graphics_context_set_fill_color(ctx, color);
+    graphics_fill_rect(ctx, rect, 0, GCornerNone);
+}
+
+// Return the euclidian distance squared between point a and b
+static inline uint16_t distance_squared(GPoint a, GPoint b) {
+    return SQUARE(a.x - b.x) + SQUARE(a.y - b.y);
+}
+
+static uint32_t normalize_angle(int32_t angle) {
+    uint32_t normalized_angle = ABS(angle) % TRIG_MAX_ANGLE;
+    if (angle < 0) {
+        normalized_angle = TRIG_MAX_ANGLE - normalized_angle;
+    }
+    return normalized_angle;
+}
+
+// Return the angle from a to b in TRIGANGLE units
+static inline int32_t angle_between_points(GPoint a, GPoint b) {
+    return atan2_lookup(b.x - a.x, b.y - a.y);  // TODO why are x and y reversed ???????
+}
+
+// Return a GPoint that is `distance` away from `origin` at `angle`.
+// If `origin` is 0, this is equivalent to converting `angle` to a cartesian vector of magnitude `distance`.
+GPoint point_from_angle(GPoint origin, int32_t angle, int32_t distance) {
+    return (GPoint) {
+        .x = (int16_t)((sin_lookup(angle) * distance) / TRIG_MAX_RATIO) + origin.x,
+        .y = (int16_t)((-cos_lookup(angle) * distance) / TRIG_MAX_RATIO) + origin.y
+    };
+}
+
+// Convert an angle calculated from GPoints into screenspace by reflecting on the y-axis
+// i.e. so that 0 degrees is straight up on the screen, instead of down
+static inline uint32_t angle_to_screenspace(int32_t angle) {
+    return normalize_angle(DEG_TO_TRIGANGLE(180) - angle);
+}
+
+static GPoint layer_get_center(Layer* layer) {
+    const GRect bounds = layer_get_bounds(layer);
+    return grect_center_point(&bounds);
+}
+
+
+/******************************************************************************
+ Graphics
+******************************************************************************/
+#if PBL_RECT
+#include <math.h>
+// TODO share with instant_timer.c
+// quake 3 sqrt
+static float fast_sqrt(const float x) {
+    const float xhalf = 0.5f * x;
+    union {
+        float x;
+        int i;
+    } u;
+    u.x = x;
+    u.i = 0x5f3759df - (u.i >> 1);  // initial guess
+    return x * u.x * (1.5f - xhalf * u.x * u.x);  // Newton step
+}
+
+/// Return the diagonal length of `rect`
+static int32_t grect_diagonal(GRect rect) {
+    return ceil(fast_sqrt(
+        (rect.size.h * rect.size.h)
+        + (rect.size.w * rect.size.w)
+    ));
+}
+#endif // PBL_RECT
+
+
+#define MAX_TEXT_SIZE (50)
+static TextLayer* s_layer_central_text = NULL;
+static TextLayer* s_layer_explanation_text = NULL;
+static char s_central_text[MAX_TEXT_SIZE] = "hello";
+
+#define FRAMERATE (30)
+#define MS_PER_FRAME (MS_PER_S / FRAMERATE)
+#define APPEAR_DURATION_MS (100)
+#define CIRCLE_PERCENT_GROWTH_RATE (100 / (APPEAR_DURATION_MS / MS_PER_FRAME))
+static int32_t s_circle_percent = 0;
+static AppTimer* s_animation_timer = NULL;
+
+static inline GColor color_outer_bg(void) {
+    return config_get()->bgColor;
+}
+static inline GColor color_outer_fg(void) {
+    return config_get()->textColor;
+}
+static inline GColor color_inner_bg(void) {
+    return config_get()->textColor;
+}
+static inline GColor color_inner_fg(void) {
+    return config_get()->bgColor;
+}
+
+static inline void reset_circle_radius(void) {
+    s_circle_percent = 0;
+}
+
+static inline bool is_circle_finished_growing(void) {
+    return s_circle_percent == 100;
+}
+
+static void cancel_animation_timer(void) {
+    if (s_animation_timer != NULL) {
+        app_timer_cancel(s_animation_timer);
+        s_animation_timer = NULL;
+    }
+}
+
+static void circle_shrink(void* context) {
+    cancel_animation_timer();
+    s_circle_percent = MAX(0, s_circle_percent - CIRCLE_PERCENT_GROWTH_RATE);
+    if (s_circle_percent > 0) {
+        s_animation_timer = app_timer_register(MS_PER_FRAME, circle_shrink, NULL);
+    } else {
+        layer_set_hidden(s_layer, true);
+    }
+    layer_mark_dirty(s_layer);
+}
+static void circle_grow(void* context) {
+    cancel_animation_timer();
+    s_circle_percent = MIN(100, s_circle_percent + CIRCLE_PERCENT_GROWTH_RATE);
+    if (s_circle_percent < 100) {
+        s_animation_timer = app_timer_register(MS_PER_FRAME, circle_grow, NULL);
+    }
+    layer_mark_dirty(s_layer);
+}
+
+
+static void draw_background(const GRect* bounds, const GPoint* centre, GContext *ctx) {
+    const int32_t outer_final_radius = PBL_IF_ROUND_ELSE(PBL_DISPLAY_WIDTH / 2, grect_diagonal(*bounds) / 2);
+    graphics_context_set_antialiased(ctx, false);
+    if (s_is_duration) {
+        graphics_color_circle(ctx, *centre, MUL_FRACT(outer_final_radius, s_circle_percent, 100), color_outer_bg());
+        graphics_color_circle(ctx, *centre, MUL_FRACT(THRESHOLD_RADIUS, s_circle_percent, 100), color_inner_bg());
+    } else {
+        graphics_color_circle(ctx, *centre, MUL_FRACT(outer_final_radius, s_circle_percent, 100), color_outer_bg());
+        graphics_color_circle(ctx, *centre, MUL_FRACT(THRESHOLD_RADIUS, s_circle_percent, 100), color_inner_bg());
+    }
+    graphics_context_set_antialiased(ctx, true);
+}
+
+static void draw_selection_angle(const GPoint* centre, GContext *ctx) {
+    const GPoint line_inner = point_from_angle(*centre, s_selected_angle, THRESHOLD_RADIUS / 2);
+
+    const int32_t outer_length = (s_touch_area == TOUCH_AREA_OUTER) ? (PBL_DISPLAY_WIDTH / 2) : THRESHOLD_RADIUS;
+    const GPoint line_outer = point_from_angle(*centre, s_selected_angle, outer_length);
+
+    const GColor color = (s_touch_area == TOUCH_AREA_OUTER) ? config_get()->ringColorRemaining
+                                                            : config_get()->ringColorOvertime;
+
+    graphics_context_set_stroke_color(ctx, color);
+    graphics_context_set_stroke_width(ctx, 2);
+    graphics_draw_line(ctx, line_inner, line_outer);
+}
+
+#define NUM_CLOCK_INDICES (12)
+static void draw_clock_indices(const GRect* bounds, GContext *ctx) {
+    static const char* hours_text[NUM_CLOCK_INDICES] =
+        {"12", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"};
+    static const char* mins_text[NUM_CLOCK_INDICES] =
+        {"0", "5", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"};
+    const GFont font = fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD);
+    graphics_context_set_text_color(ctx, color_outer_fg());
+
+#if INDEX_LINES
+    graphics_context_set_stroke_width(ctx, 1);
+    graphics_context_set_stroke_color(ctx, color_outer_fg());
+#endif // INDEX_LINES
+
+    for (int32_t i = 0; i < NUM_CLOCK_INDICES; i++) {
+        const int16_t angle = i * DEG_TO_TRIGANGLE(360 / NUM_CLOCK_INDICES);
+
+#define INDEX_LINES 0
+#if INDEX_LINES
+        const GPoint circumference_point = gpoint_from_polar(*bounds, GOvalScaleModeFitCircle, angle);
+        int32_t line_len = ((i % 3) == 0) ? 10 : 5;
+        const GPoint inner_point = point_from_angle(circumference_point, angle, -line_len);
+        graphics_draw_line(ctx, circumference_point, inner_point);
+#endif // INDEX_LINES
+
+        const GPoint number_point = gpoint_from_polar(grect_crop(*bounds, 16), GOvalScaleModeFitCircle, angle);
+        const char* text = (
+            (s_select_mode == SELECTMODE_MINUTE) ? mins_text[i]
+            : (s_is_duration && (i == 0)) ? "0"
+            : hours_text[i]
+        );
+        const GRect text_bounds = {
+            .origin = {number_point.x - 9, number_point.y - 17},
+            .size = {20, 36}
+        };
+        graphics_draw_text(ctx, text, font, text_bounds, GTextOverflowModeWordWrap, GTextAlignmentCenter, NULL);
+    }
+}
+
+static void update_selection_text() {
+    if (s_selected_hours < 0) {
+        snprintf(s_central_text, sizeof(s_central_text), s_is_duration ? "--h--m" : "--:--");
+    } else if (s_selected_minutes < 0) {
+        const char* fmt = (s_is_duration ? "%dh--m" : "%d:--");
+        snprintf(s_central_text, sizeof(s_central_text), fmt, s_selected_hours);
+    } else {
+        const char* fmt = (s_is_duration ? "%dh%02dm" : "%d:%02d");
+        snprintf(s_central_text, sizeof(s_central_text), fmt, s_selected_hours, s_selected_minutes);
+    }
+    LOG("central text = %s", s_central_text);
+    text_layer_set_text_color(s_layer_central_text, color_inner_fg());
+    text_layer_set_text(s_layer_central_text, s_central_text);
+
+    text_layer_set_text_color(s_layer_explanation_text, color_inner_fg());
+    text_layer_set_text(s_layer_explanation_text, s_is_duration ? "duration" : "alarm time");
+}
+
+static void draw_layer(Layer* layer, GContext* ctx) {
+    ASSERT(s_select_mode != SELECTMODE_NONE);  // layer should be hidden in this mode
+    const GRect bounds = layer_get_bounds(layer);
+    const GPoint centre = grect_center_point(&bounds);
+    draw_background(&bounds, &centre, ctx);
+    if (is_circle_finished_growing()) {
+        if (s_touch_area != TOUCH_AREA_NONE) {
+            draw_selection_angle(&centre, ctx);
+        }
+        draw_clock_indices(&bounds, ctx);
+    }
+}
+
+
+/******************************************************************************
+ Logic
+******************************************************************************/
+
+static bool is_touch_in_outer_ring(GPoint touch) {
+    return distance_squared(layer_get_center(s_layer), touch) > SQUARE(THRESHOLD_RADIUS);
+}
+
+// Return the index of the radial segment selected by `touch`.
+static uint8_t selected_segment(GPoint touch, uint8_t num_segments) {
+    const GPoint centre = layer_get_center(s_layer);
+
+    const int32_t selected_angle_gpointspace = angle_between_points(centre, touch);
+    s_selected_angle = angle_to_screenspace(selected_angle_gpointspace);
+
+    LOG("(%d, %d) -> (%d, %d) = %d degrees", centre.x, centre.y, touch.x, touch.y, TRIGANGLE_TO_DEG(s_selected_angle));
+
+    // The centre of the zeroth segment is at 0 screenspace degrees (i.e. straight up)
+    // so subtract half a segment from the touched angle
+    const int32_t offset = TRIG_MAX_ANGLE / (2 * num_segments);
+    const uint32_t offset_angle_screenspace = angle_to_screenspace(selected_angle_gpointspace - offset);
+
+    return MUL_FRACT(offset_angle_screenspace, num_segments, TRIG_MAX_ANGLE);
+}
+
+static void update_selection(GPoint touch) {
+    if (s_touch_area == TOUCH_AREA_OUTER) {
+        if (s_select_mode == SELECTMODE_HOUR) {
+            s_selected_hours = selected_segment(touch, 12);
+            if (!s_is_duration && (s_selected_hours == 0)) {
+                s_selected_hours = 12;
+            }
+            LOG("s_selected_hours = %d", s_selected_hours);
+        } else {
+            s_selected_minutes = selected_segment(touch, 60);
+            LOG("s_selected_minutes = %d", s_selected_minutes);
+        }
+    } else {  // no selection
+        LOG("touch in inner ring");
+        if (s_select_mode == SELECTMODE_HOUR) {
+            s_selected_hours = -1;
+        } else {
+            s_selected_minutes = -1;
+        }
+    }
+    update_selection_text();
+}
+
+static void handle_timeout(void* data);
+static void start_timeout(void) {
+    int32_t timeout_ms = config_get()->touchInputTimeoutDeciseconds * 100;
+    if (timeout_ms > 0) {
+        s_cancel_timer = app_timer_register(timeout_ms, handle_timeout, NULL);
+    }
+}
+
+static void cancel_timeout(void) {
+    if (s_cancel_timer != NULL) {
+        app_timer_cancel(s_cancel_timer);
+        s_cancel_timer = NULL;
+    }
+}
+
+static void finish(void) {
+    cancel_timeout();
+    s_select_mode = SELECTMODE_NONE;
+    s_selected_hours = -1;
+    s_selected_minutes = -1;
+    s_touch_area = TOUCH_AREA_NONE;
+    circle_shrink(NULL);
+}
+
+static void handle_timeout(void* data) {
+    UNUSED(data);
+    LOG("Timedout touch selection");
+    s_cancel_timer = NULL;
+    finish();
+}
+
+static void handle_touch_event(const TouchEvent *event, void *context) {
+    UNUSED(context);
+    const GPoint touch = (GPoint){event->x, event->y};
+    s_touch_area = is_touch_in_outer_ring(touch) ? TOUCH_AREA_OUTER : TOUCH_AREA_INNER;
+
+    switch (event->type) {
+    case TouchEvent_Touchdown:
+        cancel_timeout();
+        if (s_select_mode == SELECTMODE_NONE) {
+            s_is_duration = (s_touch_area == TOUCH_AREA_INNER);
+            s_select_mode = SELECTMODE_HOUR;
+            circle_grow(NULL);
+            layer_set_hidden(s_layer, false);
+        } else {
+            ASSERT(s_select_mode == SELECTMODE_MINUTE);
+        }
+        update_selection(touch);
+        break;
+    case TouchEvent_PositionUpdate:
+        update_selection(touch);
+        break;
+    case TouchEvent_Liftoff:
+        if ((s_touch_area == TOUCH_AREA_OUTER)) {
+            update_selection(touch);
+            if (s_select_mode == SELECTMODE_HOUR) {
+                start_timeout();
+                s_select_mode = SELECTMODE_MINUTE;
+            } else {  // SELECTMODE_MINUTE
+                LOG("Complete touch selection");
+                s_callback(s_is_duration, s_selected_hours, s_selected_minutes);
+                finish();
+            }
+        } else {  // TOUCH_AREA_INNER
+            LOG("Cancelled touch selection");
+            finish();
+        }
+        s_touch_area = TOUCH_AREA_NONE;
+        break;
+    default:
+        ASSERT(false);
+        break;
+    }
+
+    layer_mark_dirty(s_layer);
+}
+
+
+/******************************************************************************
+ Public funcs
+******************************************************************************/
+
+// Return true if the user is currently touching the screen
+bool touch_in_progress(void) {
+    return s_select_mode != SELECTMODE_NONE;
+}
+
+// Enable or disable the touchscreen
+// TODO maybe have the main window disable this on a timer, and re-enable on shake (i.e. same as backlight)
+// although I think the system automatically puts it in a low-power mode after 2s anyway
+void touch_enable(bool enable) {
+    ASSERT(s_layer != NULL);  // can happen if you submit app config while touching
+    if (touch_service_is_enabled() && (s_layer != NULL)) {
+        ASSERT(!touch_in_progress());  // can happen if you submit app config while touching
+        if (enable) {
+            touch_service_subscribe(handle_touch_event, NULL);
+        } else {
+            finish();
+            touch_service_unsubscribe();
+        }
+    }
+}
+
+void touch_create(Layer* parent, TouchSelectionCallback callback) {
+    ASSERT(s_layer == NULL);
+    if (touch_service_is_enabled() && (s_layer == NULL)) {
+        // primary layer
+        s_layer = layer_create(layer_get_frame(parent));
+        layer_set_update_proc(s_layer, draw_layer);
+        layer_add_child(parent, s_layer);
+
+        // central text
+        const GRect bounds = layer_get_bounds(s_layer);
+        const GFont main_text_font = fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD);
+        const int16_t main_text_h = 28 + 8;
+        s_layer_central_text = text_layer_create(
+            GRect(0, grect_center_point(&bounds).y - (main_text_h / 2), bounds.size.w, main_text_h));
+        text_layer_set_text(s_layer_central_text, s_central_text);
+        text_layer_set_text_alignment(s_layer_central_text, GTextAlignmentCenter);
+        text_layer_set_font(s_layer_central_text, main_text_font);
+        text_layer_set_background_color(s_layer_central_text, GColorClear);
+        layer_add_child(s_layer, (Layer*)s_layer_central_text);
+
+        s_layer_explanation_text = text_layer_create(
+            GRect(0, grect_center_point(&bounds).y - (main_text_h / 2) - 9, bounds.size.w, 9));
+        text_layer_set_text(s_layer_explanation_text, "");
+        text_layer_set_text_alignment(s_layer_explanation_text, GTextAlignmentCenter);
+        text_layer_set_font(s_layer_explanation_text, fonts_get_system_font(FONT_KEY_GOTHIC_09));
+        text_layer_set_background_color(s_layer_explanation_text, GColorClear);
+        layer_add_child(s_layer, (Layer*)s_layer_explanation_text);
+        layer_set_hidden(s_layer, true);
+        s_callback = callback;
+    }
+}
+
+void touch_destroy(void) {
+    ASSERT(s_layer != NULL);  // can happen if !touch_service_is_enabled()
+    if (s_layer != NULL) {
+        touch_enable(false);
+        layer_destroy(s_layer);
+        s_layer = NULL;
+        text_layer_destroy(s_layer_central_text);
+        text_layer_destroy(s_layer_explanation_text);
+        cancel_animation_timer();
+    }
+}
+
+
+#endif // PBL_TOUCH

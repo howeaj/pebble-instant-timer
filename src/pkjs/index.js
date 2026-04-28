@@ -107,6 +107,17 @@ var clay = new Clay(clayConfig, function(minified) {
         }
     }
 
+    function toggleTouchOptions() {
+        var enableTouch = this;
+        for (var item of clayConfig.getItemsByGroup("touch")) {
+            if (enableTouch.get()) {
+                item.show();
+            } else {
+                item.hide();
+            }
+        }
+    }
+
     clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function() {
         if (clayConfig.meta.activeWatchInfo) {
             separateSystemBars = (clayConfig.meta.activeWatchInfo.platform === "emery");
@@ -123,6 +134,12 @@ var clay = new Clay(clayConfig, function(minified) {
         }
         setTheme.call(themeSelector);
         themeSelector.on("change", setTheme);
+
+        var enableTouch = clayConfig.getItemByMessageKey("enableTouch");
+        if (enableTouch) {
+            toggleTouchOptions.call(enableTouch)
+            enableTouch.on("change", toggleTouchOptions);
+        }
     });
 
 });

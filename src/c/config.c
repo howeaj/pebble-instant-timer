@@ -21,9 +21,12 @@ static Config s_config = {
     .statusBarBgColor = GColorBlack,
     .statusBarTextColor = GColorWhite,
     .actionBarBgColor = GColorBlack,
-    .actionBarIconColor = GColorWhite
+    .actionBarIconColor = GColorWhite,
+
+    .enableTouch = true,
+    .touchInputTimeoutDeciseconds = 20
 };
-STATIC_ASSERT(sizeof(Config) == 10);
+STATIC_ASSERT(sizeof(Config) == 15);
 
 static NewConfigCallback s_new_config_callback = NULL;
 
@@ -40,6 +43,7 @@ static void local_persist_load(void) {
     StatusCode status = E_DOES_NOT_EXIST;
     if (is_local_persist_written_and_current_version()){
         status = persist_read_data(PERSIST_KEY_CONFIG, &s_config, sizeof(s_config));
+        LOG("Loaded config: touchEnable=%s", BOOL_TO_STR(s_config.enableTouch));
     }
     if (status <= 0) {
         LOG("Config not loaded from persistent storage (%d)", status);
@@ -71,6 +75,7 @@ static void local_persist_save(void) {
 MACRO_END
 #define RECEIVE_CONFIG_BOOL(message_key) RECEIVE_CONFIG(message_key, (tuple->value->int32 == 1))
 #define RECEIVE_CONFIG_COLOR(message_key) RECEIVE_CONFIG(message_key, GColorFromHEX(tuple->value->int32))
+#define RECEIVE_CONFIG_INT(message_key) RECEIVE_CONFIG(message_key, tuple->value->int32)
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     Config saved_config = s_config;
@@ -85,7 +90,9 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     RECEIVE_CONFIG_COLOR(statusBarTextColor);
     RECEIVE_CONFIG_COLOR(actionBarBgColor);
     RECEIVE_CONFIG_COLOR(actionBarIconColor);
-    STATIC_ASSERT(sizeof(Config) == 10);
+    RECEIVE_CONFIG_BOOL(enableTouch);
+    RECEIVE_CONFIG_INT(touchInputTimeoutDeciseconds);
+    STATIC_ASSERT(sizeof(Config) == 15);
 
     if (memcmp(&saved_config, &s_config, sizeof(saved_config)) != 0) {
         LOG("New app config received");

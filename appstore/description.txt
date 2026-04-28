@@ -1,5 +1,5 @@
 A polished combination timer, alarm and stopwatch designed for quick-launch.
-For everyday use for cooking, reminders and alarms.
+For everyday use for cooking, reminders and alarms. Touch controls!
 Packed with unique, detailed behaviour to optimise frequent use.
 
 Specifically, this does 3 things I couldn't find anywhere else:
@@ -7,8 +7,16 @@ Specifically, this does 3 things I couldn't find anywhere else:
     - Show all 4 relevant values (alarm time, duration, remaining, elapsed) at all times
     - Modify the duration at any point without any pause or confirmation
 
+Touch controls (PT2/PR2):
+    - Touch and drag to select hours then minutes; this clears all state and starts a new timer/alarm.
+    - Start touching from the middle to set a timer duration, or from the edge to set an alarm time
+    - To cancel, finish touching in the middle or don't select any minutes
+
 Other features:
     - Timer modification controls optimised for speed (1h, 5m, 1m increments)
+    - Configuration options:
+        - Colours / themes
+        - Touch enable/disable and timeout
     - Battery saving:
         - Auto switch between seconds/minutes update rate, synced with backlight and/or remaining time
         - Zero background power use
@@ -20,17 +28,13 @@ Other features:
     - Glance info in system app launcher
     - Pause, resume, restart, reset
 
-Planned updates:
-    - Touchscreen control (as soon as API is available)
-    - App configuration (colours, battery saving options, any other requested features)
-
 Controls:
     - Select/Back to choose modification digits (15/30 seconds available while under 2/5mins)
     - Up/Down to increment/decrement. Hold to repeat. Down at 0 wraps up.
     - Select Long-press (or Press at lowest digit)
-       to toggle pause/resume and enter "control mode":
+         to toggle pause/resume and enter "control mode":
         - Up (rewind icon) to restart the timer (i.e. set elapsed time to 0)
-           while retaining the timer/alarm duration
+             while retaining the timer/alarm duration
         - Up Long-press to reset the entire app to 0
         - Select (play/pause icon) to pause/resume counting
         - Down (X icon) to discard timer/alarm and exit the app
@@ -44,7 +48,7 @@ Controls:
 
 This app is great if you want to:
     - Set a stopwatch/timer running fast without looking in the middle of cooking,
-       and then change it as you go along
+         and then change it as you go along
     - Often quickly set an alarm to remind you about something in the near future
     - Set a wakeup alarm quick at a varying time just before you go to sleep
     - Do all of the above with a single app using one quick-launch slot
@@ -57,8 +61,6 @@ Use (a) different app(s) if you want:
     - Sports-stopwatch split times / lap times
     - A history of previously set times
     - Voice control
-
-This is based on an unreleased app I made just for myself for an android smartwatch years ago, which ended up being the only thing I ever used it for, daily. Watches are primarily for dealing with time after all, and I just can't find any other timer app that does what I want! Now redesigned and polished for release on pebble in the hope that I'm not an alien freak and this is useful for someone else too :P.
 
 Suggestions for further improvements welcome.
 Thanks for checking this out! Let me know if you end up using it :)

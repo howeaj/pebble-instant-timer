@@ -21,6 +21,9 @@ typedef struct Config {
     GColor statusBarTextColor;
     GColor actionBarBgColor;
     GColor actionBarIconColor;
+
+    bool enableTouch;
+    int32_t touchInputTimeoutDeciseconds;  // how long you have to start the second touch before it cancels
 } Config;
 // This doesn't need to change as long as you only append new fields
 // and don't change the meaning of existing data.

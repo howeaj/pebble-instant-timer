@@ -5,10 +5,11 @@
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
     - configuration via clay
         - disable battery saving rate reduction (or change its timeout)
-    - touchscreen control
-        - fast timer/alarm setting
-        - treat as activity for update_tick_subscription
     - investigate https://github.com/pebble-hacks/pebble_glancing_demo/blob/master/src/glancing_api.h
+    - insert timeline pin
+        - "PKJS when running on the new Core app can just do Pebble.insertTimelinePin"
+        - https://github.com/CometDog/pebble-kite/blob/main/src/ts/timeline.ts#L6-L30
+        - https://github.com/coredevices/pypkjs/commit/b0f02e1bca2d005524c8ee46aaf45aac1531b816
 */
 
 #include <math.h>
@@ -27,6 +28,7 @@
 #include "config.h"
 #include "macros.h"
 #include "persist_keys.h"
+#include "touch.h"
 
 
 #define LONG_CLICK_DURATION (500)  // duration for long click events
@@ -823,6 +825,18 @@ static void do_clear(void){
     update_action_bar();
 }
 
+#if PBL_TOUCH
+// set the duration straight to a new value and restart the timer
+static void do_set(time_t duration) {
+    vibe_for_start_stop();
+    stopwatch_restart();
+    s_state.alarm_duration = duration;
+    stopwatch_tick();
+    update_alarm_duration();
+    update_remaining();
+}
+#endif // PBL_TOUCH
+
 // restart the timer, keeping the alarm duration
 static void do_restart(void){
     vibe_for_start_stop();
@@ -1287,8 +1301,42 @@ static void new_config_handler(const Config* config) {
 #endif // PBL_RECT
     status_bar_layer_set_colors(s_status_bar, config->statusBarBgColor, config->statusBarTextColor);
 
+#if PBL_TOUCH
+    touch_enable(config->enableTouch);
+#endif // PBL_TOUCH
+
     layer_mark_dirty(window_get_root_layer(s_main_window));
 }
+
+#if PBL_TOUCH
+// handle new touch selection
+static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
+    time_t duration;
+    if (is_duration) {
+        duration = (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE);
+    } else {
+        const time_t now = time(NULL);
+        struct tm* target_time_tomorrow_struct = localtime(&now);
+        target_time_tomorrow_struct->tm_mday += 1;
+        target_time_tomorrow_struct->tm_hour = hours;
+        target_time_tomorrow_struct->tm_min = minutes;
+        target_time_tomorrow_struct->tm_sec = 0;
+        const time_t target_time_tomorrow = mktime(target_time_tomorrow_struct);
+        duration = (target_time_tomorrow - now) % (12 * SECONDS_PER_HOUR);
+    }
+    LOG("SELECTED %s, %u, %u -> timer duration set to %us", BOOL_TO_STR(is_duration), hours, minutes, duration);
+
+    // start a fresh timer/alarm using the new duration
+    do_set(duration);
+
+    // skip to ctrl mode
+    s_mode = MODE_CTRL;
+    update_mode();
+    update_action_bar();
+
+    update_tick_subscription(SECOND_UNIT);
+}
+#endif // PBL_TOUCH
 
 
 /******************************************************************************
@@ -1455,6 +1503,11 @@ static void main_window_load(Window *window) {
     s_status_bar = status_bar_layer_create();
     layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
 
+    // touch selector
+#if PBL_TOUCH
+    touch_create(window_layer, &touch_callback);
+#endif // PBL_TOUCH
+
     // exit screen
     create_exit_screen(window_layer);
 
@@ -1527,6 +1580,11 @@ static void main_window_unload(Window *window) {
 
     // status bar
     status_bar_layer_destroy(s_status_bar);
+
+    // touch selector
+#if PBL_TOUCH
+    touch_destroy();
+#endif // PBL_TOUCH
 
     // exit screen
     bitmap_layer_destroy(s_exit_layer);
