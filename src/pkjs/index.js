@@ -3,6 +3,8 @@ var clayConfig = require('./config.json');
 var clay = new Clay(clayConfig, function(minified) {
     var clayConfig = this;
     var colorChangeCausesCustom = true;
+    var separateSystemBars = true;  // emery layout is slightly different, with uneven gap to action/status bars
+    var round = false;  // round layouts' actionbar icons are on the progress ring
 
     function setColor(messageKey, color) {
         var item = clayConfig.getItemByMessageKey(messageKey);
@@ -33,7 +35,6 @@ var clay = new Clay(clayConfig, function(minified) {
                 setColor('bgColor',             0x000000);
                 setColor('statusBarBgColor',    0x000000);
                 setColor('actionBarBgColor',    0x000000);
-                setColor('bgColorImage',        0x550000);
                 setColor('textColor',           0xffffff);
                 setColor('statusBarTextColor',  0xffffff);
                 setColor('actionBarIconColor',  0xffffff);
@@ -41,12 +42,12 @@ var clay = new Clay(clayConfig, function(minified) {
                 setColor('ringColorRemaining',  0x00ff00);
                 setColorById('ringColorOvertimeColor', 0xff0000);
                 setColorById('ringColorOvertimeBw',    0x555555);
+                setColor('bgColorImage',        0x550000);
                 break;
             case "Light":
                 setColor('bgColor',             0xffffff);
-                setColor('actionBarBgColor',    0xffffff);
                 setColor('statusBarBgColor',    0xffffff);
-                setColor('bgColorImage',        0xff5555);
+                setColor('actionBarBgColor',    0xffffff);
                 setColor('textColor',           0x000000);
                 setColor('statusBarTextColor',  0x000000);
                 setColor('actionBarIconColor',  0x000000);
@@ -54,30 +55,45 @@ var clay = new Clay(clayConfig, function(minified) {
                 setColor('ringColorRemaining',  0x00ff00);
                 setColorById('ringColorOvertimeColor', 0xff0000);
                 setColorById('ringColorOvertimeBw',    0x555555);
+                setColor('bgColorImage',        0xff5555);
                 break;
             case "Green":
                 setColor('bgColor',             0x005500);
-                setColor('actionBarBgColor',    0x005500);
-                setColor('statusBarBgColor',    0x005500);
-                setColor('bgColorImage',        0x555500);
-                setColor('textColor',           0xaaffaa);
+                if (separateSystemBars) {
+                    setColor('statusBarBgColor', 0x000000);
+                    setColor('actionBarBgColor', 0x000000);
+                } else {
+                    setColor('statusBarBgColor', 0x005500);
+                    setColor('actionBarBgColor', 0x005500);
+                }
+                setColor('textColor',           0xffffff);
                 setColor('statusBarTextColor',  0xaaffaa);
-                setColor('actionBarIconColor',  0xaaffaa);
-                setColor('ringColorEmpty',      0x55aa55);
-                setColor('ringColorRemaining',  0x00ff00);
-                setColor('ringColorOvertime',   0xff0000);
+                if (round) {
+                    setColor('actionBarIconColor',  0Xffffff);
+                } else {
+                    setColor('actionBarIconColor',  0xaaffaa);
+                }
+                setColor('ringColorEmpty',      0x00aa00);
+                setColor('ringColorRemaining',  0x55ff00);
+                setColor('ringColorOvertime',   0xaa0000);
+                setColor('bgColorImage',        0x550000);
                 break;
-            case "Blue":
-                setColor('bgColor',             0x000055);
-                setColor('actionBarBgColor',    0x000055);
-                setColor('statusBarBgColor',    0x000055);
-                setColor('bgColorImage',        0x0000aa);
-                setColor('textColor',           0xaaffff);
-                setColor('statusBarTextColor',  0xaaffff);
-                setColor('actionBarIconColor',  0xaaffff);
+            case "Aqua":
+                setColor('bgColor',             0x55aaff);
+                if (separateSystemBars) {
+                    setColor('statusBarBgColor', 0x00aaaa);
+                    setColor('actionBarBgColor', 0x00aaaa);
+                } else {
+                    setColor('statusBarBgColor', 0x55aaff);
+                    setColor('actionBarBgColor', 0x55aaff);
+                }
+                setColor('textColor',           0xffffff);
+                setColor('statusBarTextColor',  0xffffff);
+                setColor('actionBarIconColor',  0xffffff);
                 setColor('ringColorEmpty',      0x5555AA);
                 setColor('ringColorRemaining',  0x00ff00);
-                setColor('ringColorOvertime',   0xff0000);
+                setColor('ringColorOvertime',   0xff00aa);
+                setColor('bgColorImage',        0xaa0055);
                 break;
             default:
                 break;
@@ -87,7 +103,11 @@ var clay = new Clay(clayConfig, function(minified) {
     }
 
     clayConfig.on(clayConfig.EVENTS.AFTER_BUILD, function() {
-        var themeSelector = clayConfig.getItemByMessageKey("theme")
+        if (clayConfig.meta.activeWatchInfo) {
+            separateSystemBars = (clayConfig.meta.activeWatchInfo.platform === "emery");
+            round = ["chalk", "gabbro"].includes(clayConfig.meta.activeWatchInfo.platform);
+        }
+        var themeSelector = clayConfig.getItemByMessageKey("theme");
         for (var item of clayConfig.getItemsByType("color")) {
             item.hide();
             item.on("change", function() {  // the "click" event doesn't work

@@ -30,8 +30,8 @@
             "value": "Green"
           },
           {
-            "label": "Blue",
-            "value": "Blue"
+            "label": "Aqua",
+            "value": "Aqua"
           },
           {
             "label": "Custom",
@@ -83,13 +83,6 @@
       },
       {
         "type": "color",
-        "messageKey": "bgColorImage",
-        "label": "Background - Main panel pause/bell",
-        "defaultValue": "550000",
-        "capabilities": ["COLOR"]
-      },
-      {
-        "type": "color",
         "messageKey": "textColor",
         "label": "Foreground - Main panel",
         "defaultValue": "ffffff"
@@ -128,7 +121,7 @@
         "defaultValue": "ff0000",
         "capabilities": ["COLOR"]
       },
-            {
+      {
         "type": "color",
         "messageKey": "ringColorOvertime",
         "id": "ringColorOvertimeBw",
@@ -136,6 +129,13 @@
         "defaultValue": "555555",
         "capabilities": ["NOT_COLOR"],
         "allowGray": true
+      },
+      {
+        "type": "color",
+        "messageKey": "bgColorImage",
+        "label": "Underlay - Pause/Bell",
+        "defaultValue": "550000",
+        "capabilities": ["COLOR"]
       },
       {
         "type": "submit",
