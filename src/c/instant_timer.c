@@ -17,6 +17,13 @@
 #include <time.h>
 
 #define DEBUG 0  // TODO disable for release
+#define FORCE_BACKLIGHT_ON 0
+#if FORCE_BACKLIGHT_ON
+    #define DEMO_BACKLIGHT_ENABLE(on) light_enable(on)
+#else // !FORCE_BACKLIGHT_ON
+    #define DEMO_BACKLIGHT_ENABLE(on)
+#endif // !FORCE_BACKLIGHT_ON
+
 #include "config.h"
 #include "macros.h"
 #include "persist_keys.h"
@@ -1560,7 +1567,11 @@ static void deinit(void) {
 }
 
 int main(void) {
+    DEMO_BACKLIGHT_ENABLE(true);
+
     init();
     app_event_loop();
     deinit();
+
+    DEMO_BACKLIGHT_ENABLE(false);
 }
