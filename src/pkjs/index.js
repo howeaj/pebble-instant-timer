@@ -32,16 +32,19 @@ var clay = new Clay(clayConfig, function(minified) {
             colorChangeCausesCustom = false;
             switch (theme) {
             case "Dark":
+                // This should match the defaults in config.json and config.c
                 setColor('bgColor',             0x000000);
                 setColor('statusBarBgColor',    0x000000);
                 setColor('actionBarBgColor',    0x000000);
                 setColor('textColor',           0xffffff);
                 setColor('statusBarTextColor',  0xffffff);
                 setColor('actionBarIconColor',  0xffffff);
-                setColor('ringColorEmpty',      0x555555);
-                setColor('ringColorRemaining',  0x00ff00);
-                setColorById('ringColorOvertimeColor', 0xff0000);
-                setColorById('ringColorOvertimeBw',    0x555555);
+                setColorById('col_ringColorEmpty',     0x555555);
+                setColorById('col_ringColorRemaining', 0x00ff00);
+                setColorById('col_ringColorOvertime',  0xff0000);
+                setColorById('bw_ringColorEmpty',      0x555555);
+                setColorById('bw_ringColorRemaining',  0xffffff);
+                setColorById('bw_ringColorOvertime',   0xffffff);
                 setColor('bgColorImage',        0x550000);
                 break;
             case "Light":
@@ -51,10 +54,12 @@ var clay = new Clay(clayConfig, function(minified) {
                 setColor('textColor',           0x000000);
                 setColor('statusBarTextColor',  0x000000);
                 setColor('actionBarIconColor',  0x000000);
-                setColor('ringColorEmpty',      0xaaaaaa);
-                setColor('ringColorRemaining',  0x00ff00);
-                setColorById('ringColorOvertimeColor', 0xff0000);
-                setColorById('ringColorOvertimeBw',    0x555555);
+                setColorById('col_ringColorEmpty',     0xaaaaaa);
+                setColorById('col_ringColorRemaining', 0x00ff00);
+                setColorById('col_ringColorOvertime',  0xff0000);
+                setColorById('bw_ringColorEmpty',      0xffffff);
+                setColorById('bw_ringColorRemaining',  0x555555);
+                setColorById('bw_ringColorOvertime',   0x000000);
                 setColor('bgColorImage',        0xff5555);
                 break;
             case "Green":

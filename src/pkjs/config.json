@@ -44,7 +44,6 @@
         "messageKey": "theme",
         "label": "Theme",
         "defaultValue": "Dark",
-        "description": "Select a theme, or customise individual colours below",
         "capabilities": ["NOT_COLOR"],
         "options": [
           {
@@ -72,8 +71,7 @@
         "messageKey": "actionBarBgColor",
         "label": "Background - Action bar",
         "defaultValue": "000000",
-        "capabilities": ["RECT"],
-        "allowGray": true
+        "capabilities": ["RECT"]
       },
       {
         "type": "color",
@@ -102,31 +100,51 @@
       {
         "type": "color",
         "messageKey": "ringColorEmpty",
+        "id": "col_ringColorEmpty",
         "label": "Progress ring - Empty",
         "defaultValue": "555555",
-        "allowGray": true
+        "capabilities": ["COLOR"]
       },
       {
         "type": "color",
         "messageKey": "ringColorRemaining",
+        "id": "col_ringColorRemaining",
         "label": "Progress ring - Remaining",
         "defaultValue": "00ff00",
-        "allowGray": true
+        "capabilities": ["COLOR"]
       },
       {
         "type": "color",
         "messageKey": "ringColorOvertime",
-        "id": "ringColorOvertimeColor",
+        "id": "col_ringColorOvertime",
         "label": "Progress ring - Overtime",
         "defaultValue": "ff0000",
         "capabilities": ["COLOR"]
       },
       {
         "type": "color",
-        "messageKey": "ringColorOvertime",
-        "id": "ringColorOvertimeBw",
-        "label": "Progress ring - Overtime",
+        "messageKey": "ringColorEmpty",
+        "id": "bw_ringColorEmpty",
+        "label": "Progress ring - Empty",
         "defaultValue": "555555",
+        "capabilities": ["NOT_COLOR"],
+        "allowGray": true
+      },
+      {
+        "type": "color",
+        "messageKey": "ringColorRemaining",
+        "id": "bw_ringColorRemaining",
+        "label": "Progress ring - Remaining",
+        "defaultValue": "ffffff",
+        "capabilities": ["NOT_COLOR"],
+        "allowGray": true
+      },
+      {
+        "type": "color",
+        "messageKey": "ringColorOvertime",
+        "id": "bw_ringColorOvertime",
+        "label": "Progress ring - Overtime",
+        "defaultValue": "ffffff",
         "capabilities": ["NOT_COLOR"],
         "allowGray": true
       },

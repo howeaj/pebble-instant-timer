@@ -10,14 +10,14 @@
 #include "macros.h"
 #include "persist_keys.h"
 
-// This should match the defaults in config.json
+// This should match the defaults in config.json and Dark theme in index.js
 static Config s_config = {
     .textColor = GColorWhite,
     .bgColor = GColorBlack,
     .bgColorImage = GColorBulgarianRose,
     .ringColorEmpty = GColorDarkGray,
-    .ringColorRemaining = GColorGreen,
-    .ringColorOvertime = PBL_IF_COLOR_ELSE(GColorRed, GColorGreen),
+    .ringColorRemaining = PBL_IF_COLOR_ELSE(GColorGreen, GColorWhite),
+    .ringColorOvertime = PBL_IF_COLOR_ELSE(GColorRed, GColorWhite),
     .statusBarBgColor = GColorBlack,
     .statusBarTextColor = GColorWhite,
     .actionBarBgColor = GColorBlack,
