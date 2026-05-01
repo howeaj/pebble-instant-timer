@@ -307,6 +307,7 @@ static bool is_touch_in_outer_ring(GPoint touch) {
 }
 
 // Return the index of the radial segment selected by `touch`.
+// Also update s_selected_angle for drawing the selection line.
 static uint8_t selected_segment(GPoint touch, uint8_t num_segments) {
     const GPoint centre = layer_get_center(s_layer);
 
@@ -336,6 +337,7 @@ static void update_selection(GPoint touch) {
             LOG("s_selected_minutes = %d", s_selected_minutes);
         }
     } else {  // no selection
+        (void)selected_segment(touch, 1);  // update s_selected_angle
         LOG("touch in inner ring");
         if (s_select_mode == SELECTMODE_HOUR) {
             s_selected_hours = -1;

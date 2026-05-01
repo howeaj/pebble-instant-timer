@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.1
+
+- Bugfix angle selection indicator updates while touching in the middle
+
 ## 2.0.0
 
 - Touch control!
