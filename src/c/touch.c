@@ -181,7 +181,7 @@ static void cancel_animation_timer(void) {
 }
 
 static void circle_shrink(void* context) {
-    cancel_animation_timer();
+    s_animation_timer = NULL;
     s_circle_percent = MAX(0, s_circle_percent - CIRCLE_PERCENT_GROWTH_RATE);
     if (s_circle_percent > 0) {
         s_animation_timer = app_timer_register(MS_PER_FRAME, circle_shrink, NULL);
@@ -191,7 +191,7 @@ static void circle_shrink(void* context) {
     layer_mark_dirty(s_layer);
 }
 static void circle_grow(void* context) {
-    cancel_animation_timer();
+    s_animation_timer = NULL;
     s_circle_percent = MIN(100, s_circle_percent + CIRCLE_PERCENT_GROWTH_RATE);
     if (s_circle_percent < 100) {
         s_animation_timer = app_timer_register(MS_PER_FRAME, circle_grow, NULL);
@@ -199,6 +199,14 @@ static void circle_grow(void* context) {
     layer_mark_dirty(s_layer);
 }
 
+static void animate_circle(bool appear) {
+    cancel_animation_timer();
+    if (appear) {
+        circle_grow(NULL);
+    } else {
+        circle_shrink(NULL);
+    }
+}
 
 static void draw_background(const GRect* bounds, const GPoint* centre, GContext *ctx) {
     const int32_t outer_final_radius = PBL_IF_ROUND_ELSE(PBL_DISPLAY_WIDTH / 2, grect_diagonal(*bounds) / 2);
@@ -276,7 +284,6 @@ static void update_selection_text() {
         const char* fmt = (s_is_duration ? "%dh%02dm" : "%d:%02d");
         snprintf(s_central_text, sizeof(s_central_text), fmt, s_selected_hours, s_selected_minutes);
     }
-    LOG("central text = %s", s_central_text);
     text_layer_set_text_color(s_layer_central_text, color_inner_fg());
     text_layer_set_text(s_layer_central_text, s_central_text);
 
@@ -285,7 +292,6 @@ static void update_selection_text() {
 }
 
 static void draw_layer(Layer* layer, GContext* ctx) {
-    ASSERT(s_select_mode != SELECTMODE_NONE);  // layer should be hidden in this mode
     const GRect bounds = layer_get_bounds(layer);
     const GPoint centre = grect_center_point(&bounds);
     draw_background(&bounds, &centre, ctx);
@@ -334,7 +340,7 @@ static uint8_t selected_segment(GPoint touch, uint8_t num_segments) {
     const int32_t selected_angle_gpointspace = angle_between_points(centre, touch);
     s_selected_angle = angle_to_screenspace(selected_angle_gpointspace);
 
-    LOG("(%d, %d) -> (%d, %d) = %d degrees", centre.x, centre.y, touch.x, touch.y, TRIGANGLE_TO_DEG(s_selected_angle));
+    // LOG("(%d, %d) -> (%d, %d) = %d degrees", centre.x, centre.y, touch.x, touch.y, TRIGANGLE_TO_DEG(s_selected_angle));
 
     // The centre of the zeroth segment is at 0 screenspace degrees (i.e. straight up)
     // so subtract half a segment from the touched angle
@@ -351,14 +357,11 @@ static void update_selection(GPoint touch) {
             if (!s_is_duration && (s_selected_hours == 0)) {
                 s_selected_hours = 12;
             }
-            LOG("s_selected_hours = %d", s_selected_hours);
         } else {
             s_selected_minutes = selected_segment(touch, 60);
-            LOG("s_selected_minutes = %d", s_selected_minutes);
         }
     } else {  // no selection
         (void)selected_segment(touch, 1);  // update s_selected_angle
-        LOG("touch in inner ring");
         if (s_select_mode == SELECTMODE_HOUR) {
             s_selected_hours = -1;
         } else {
@@ -368,18 +371,19 @@ static void update_selection(GPoint touch) {
     update_selection_text();
 }
 
-static void handle_timeout(void* data);
-static void start_timeout(void) {
-    int32_t timeout_ms = config_get()->touchInputTimeoutDeciseconds * 100;
-    if (timeout_ms > 0) {
-        s_cancel_timer = app_timer_register(timeout_ms, handle_timeout, NULL);
-    }
-}
-
 static void cancel_timeout(void) {
     if (s_cancel_timer != NULL) {
         app_timer_cancel(s_cancel_timer);
         s_cancel_timer = NULL;
+    }
+}
+
+static void handle_timeout(void* data);
+static void start_timeout(void) {
+    cancel_timeout();
+    int32_t timeout_ms = config_get()->touchInputTimeoutDeciseconds * 100;
+    if (timeout_ms > 0) {
+        s_cancel_timer = app_timer_register(timeout_ms, handle_timeout, NULL);
     }
 }
 
@@ -389,7 +393,7 @@ static void finish(void) {
     s_selected_hours = -1;
     s_selected_minutes = -1;
     s_touch_area = TOUCH_AREA_NONE;
-    circle_shrink(NULL);
+    animate_circle(false);
 }
 
 static void handle_timeout(void* data) {
@@ -411,7 +415,7 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
         if (s_select_mode == SELECTMODE_NONE) {
             s_is_duration = (s_touch_area == TOUCH_AREA_INNER);
             s_select_mode = SELECTMODE_HOUR;
-            circle_grow(NULL);
+            animate_circle(true);
             layer_set_hidden(s_layer, false);
         } else {
             ASSERT(s_select_mode == SELECTMODE_MINUTE);
@@ -524,6 +528,7 @@ void touch_destroy(void) {
         text_layer_destroy(s_layer_central_text);
         text_layer_destroy(s_layer_explanation_text);
         cancel_animation_timer();
+        cancel_timeout();
     }
 }
 
