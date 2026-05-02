@@ -8,7 +8,7 @@ Specifically, this does 3 things I couldn't find anywhere else:
     - Modify the duration at any point without any pause or confirmation
 
 Touch controls (PT2/PR2):
-    - Touch and drag to select hours then minutes; this clears all state and starts a new timer/alarm.
+    - Touch, hold and drag to select hours then minutes; this clears all state and starts a new timer/alarm.
     - Start touching from the middle to set a timer duration, or from the edge to set an alarm time
     - To cancel, finish touching in the middle or don't select any minutes
 

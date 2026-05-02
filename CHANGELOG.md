@@ -3,6 +3,7 @@
 ## 2.1.0
 
 - Ignore very short touches (configurable)
+- Bugfix incorrect scheduling of wakeup timer on exit-and-delete
 
 ## 2.0.1
 

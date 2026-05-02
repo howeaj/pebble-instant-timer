@@ -493,12 +493,13 @@ static bool alarm_should_start(void) {
 /// Trigger the alarm
 static void alarm_start(void) {
     ASSERT(s_alarm_pulse_timer == NULL);
-    ASSERT(!s_state.is_alarm_done);
+    ASSERT(!s_state.is_alarm_done);  // TODO fails sometimes
     alarm_pulse_timer_handler(NULL);
 }
 
 static void alarm_cancel_any_wakeup(void) {
     if (s_state.alarm_wakeup_id >= 0) {
+        TRACE("CANCEL WAKEUP");
         wakeup_cancel(s_state.alarm_wakeup_id);
         s_state.alarm_wakeup_id = E_DOES_NOT_EXIST;
     }
@@ -1597,7 +1598,7 @@ static void main_window_unload(Window *window) {
     battery_state_service_unsubscribe();
 
     // business logic
-    if (!alarm_clear()){
+    if (!alarm_clear() && s_save){
         alarm_schedule_any_wakeup();
     }
     if (s_save) {
