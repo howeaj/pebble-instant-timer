@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.0
+
+- Ignore very short touches (configurable)
+
 ## 2.0.1
 
 - Bugfix angle selection indicator updates while touching in the middle

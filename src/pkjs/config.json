@@ -183,6 +183,18 @@
         "step": 0.5,
         "group": "touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+      },
+      {
+        "type": "slider",
+        "messageKey": "touchMinDurationMs",
+        "label": "Minimum touch duration (milliseconds)",
+        "description": "Touches shorter than this are ignored",
+        "defaultValue": 150,
+        "min": 0,
+        "max": 1000,
+        "step": 50,
+        "group": "touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
       }
     ]
   },

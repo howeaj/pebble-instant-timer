@@ -302,6 +302,26 @@ static void draw_layer(Layer* layer, GContext* ctx) {
  Logic
 ******************************************************************************/
 
+static time_t s_down_time_s = 0;  // the time of the latest TouchEvent_Touchdown
+static uint16_t s_down_time_ms = 0;  // ms since s_down_time_s of the latest TouchEvent_Touchdown
+
+static inline void register_touch_down(void) {
+    (void)time_ms(&s_down_time_s, &s_down_time_ms);
+}
+
+static inline bool is_touch_long_enough(void) {
+    time_t now_s = 0;
+    uint16_t now_ms = 0;
+    (void)time_ms(&now_s, &now_ms);
+
+    const int32_t duration_ms = (
+        ((now_s - s_down_time_s) * MS_PER_S)
+        + ((int32_t)now_ms - (int32_t)s_down_time_ms)
+    );
+    LOG("touch duration: %d:%u - %d:%u = %d", s_down_time_s, s_down_time_ms, now_s, now_ms, duration_ms);
+    return duration_ms >= config_get()->touchMinDurationMs;
+}
+
 static bool is_touch_in_outer_ring(GPoint touch) {
     return distance_squared(layer_get_center(s_layer), touch) > SQUARE(THRESHOLD_RADIUS);
 }
@@ -386,6 +406,7 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
 
     switch (event->type) {
     case TouchEvent_Touchdown:
+        register_touch_down();
         cancel_timeout();
         if (s_select_mode == SELECTMODE_NONE) {
             s_is_duration = (s_touch_area == TOUCH_AREA_INNER);
@@ -401,15 +422,26 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
         update_selection(touch);
         break;
     case TouchEvent_Liftoff:
-        if ((s_touch_area == TOUCH_AREA_OUTER)) {
-            update_selection(touch);
-            if (s_select_mode == SELECTMODE_HOUR) {
-                start_timeout();
-                s_select_mode = SELECTMODE_MINUTE;
-            } else {  // SELECTMODE_MINUTE
-                LOG("Complete touch selection");
-                s_callback(s_is_duration, s_selected_hours, s_selected_minutes);
-                finish();
+        if (s_touch_area == TOUCH_AREA_OUTER) {
+            if (is_touch_long_enough()) {
+                update_selection(touch);
+                if (s_select_mode == SELECTMODE_HOUR) {
+                    start_timeout();
+                    s_select_mode = SELECTMODE_MINUTE;
+                } else {  // SELECTMODE_MINUTE
+                    LOG("Complete touch selection");
+                    s_callback(s_is_duration, s_selected_hours, s_selected_minutes);
+                    finish();
+                }
+            } else {  // touch too short
+                LOG("Short touch ignored");
+                if (s_select_mode == SELECTMODE_HOUR) {
+                    finish();
+                } else {  // SELECTMODE_MINUTE
+                    s_selected_minutes = -1;
+                    update_selection_text();
+                }
+                // TODO show touch hint
             }
         } else {  // TOUCH_AREA_INNER
             LOG("Cancelled touch selection");

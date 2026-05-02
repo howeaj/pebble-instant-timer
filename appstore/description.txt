@@ -1,5 +1,5 @@
 A polished combination timer, alarm and stopwatch designed for quick-launch.
-For everyday use for cooking, reminders and alarms. Touch controls!
+For everyday use for cooking, reminders and alarms. Touch controls; set with two swipes!
 Packed with unique, detailed behaviour to optimise frequent use.
 
 Specifically, this does 3 things I couldn't find anywhere else:
