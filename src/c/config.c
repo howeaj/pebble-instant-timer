@@ -116,7 +116,11 @@ void config_init(NewConfigCallback callback) {
     s_new_config_callback = callback;
     local_persist_load();
     app_message_register_inbox_received(&inbox_received_handler);
-    app_message_open(128, 128);  // TODO how big?
+
+    AppMessageResult result = app_message_open(256, 0);
+    if (result != APP_MSG_OK) {
+        LOG("app_message_open failed: 0x%x", result);
+    }
 }
 
 void config_deinit(void) {
