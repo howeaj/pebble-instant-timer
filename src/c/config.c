@@ -25,9 +25,10 @@ static Config s_config = {
 
     .enableTouch = true,
     .touchInputTimeoutDeciseconds = 20,
-    .touchMinDurationMs = 150
+    .touchMinDurationMs = 150,
+    .invertTouchZones = false
 };
-STATIC_ASSERT(sizeof(Config) == 19);
+STATIC_ASSERT(sizeof(Config) == 20);
 
 static NewConfigCallback s_new_config_callback = NULL;
 
@@ -94,7 +95,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     RECEIVE_CONFIG_BOOL(enableTouch);
     RECEIVE_CONFIG_INT(touchInputTimeoutDeciseconds);
     RECEIVE_CONFIG_INT(touchMinDurationMs);
-    STATIC_ASSERT(sizeof(Config) == 19);
+    RECEIVE_CONFIG_BOOL(invertTouchZones);
+    STATIC_ASSERT(sizeof(Config) == 20);
 
     if (memcmp(&saved_config, &s_config, sizeof(saved_config)) != 0) {
         LOG("New app config received");

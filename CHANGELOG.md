@@ -3,6 +3,7 @@
 ## 2.2.0
 
 - Increase size of the central touch zone
+- Config option to swap duration vs alarms on the outer vs inner touch zone (user requested)
 
 ## 2.1.0
 

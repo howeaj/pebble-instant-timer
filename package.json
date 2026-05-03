@@ -40,7 +40,8 @@
       "actionBarIconColor",
       "enableTouch",
       "touchInputTimeoutDeciseconds",
-      "touchMinDurationMs"
+      "touchMinDurationMs",
+      "invertTouchZones"
     ],
     "resources": {
       "media": [

@@ -25,6 +25,7 @@ typedef struct Config {
     bool enableTouch;
     int32_t touchInputTimeoutDeciseconds;  // how long you have to start the second touch before it cancels
     int32_t touchMinDurationMs;  // minimum duration for touches on the outer ring to register
+    bool invertTouchZones;  // swap the meaning of the inner/outer ring for the initial touch
 } Config;
 // This doesn't need to change as long as you only append new fields
 // and don't change the meaning of existing data.

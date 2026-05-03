@@ -414,6 +414,9 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
         cancel_timeout();
         if (s_select_mode == SELECTMODE_NONE) {
             s_is_duration = (s_touch_area == TOUCH_AREA_INNER);
+            if (config_get()->invertTouchZones) {
+                s_is_duration = !s_is_duration;
+            }
             s_select_mode = SELECTMODE_HOUR;
             animate_circle(true);
             layer_set_hidden(s_layer, false);
