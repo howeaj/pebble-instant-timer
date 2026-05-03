@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.0
+
+- Increase size of the central touch zone
+
 ## 2.1.0
 
 - Ignore very short touches (configurable)

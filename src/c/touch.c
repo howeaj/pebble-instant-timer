@@ -16,7 +16,7 @@
 
 
 // the threshold between inner and outer ring
-#define THRESHOLD_RADIUS (PBL_DISPLAY_WIDTH / 4)
+#define THRESHOLD_RADIUS ((PBL_DISPLAY_WIDTH * 2) / 7)
 
 
 static Layer* s_layer = NULL;
