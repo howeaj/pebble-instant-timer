@@ -17,7 +17,7 @@ set -x
 pebble kill
 pebble wipe
 pebble install --emulator $1
-sleep 1
+sleep 3
 
 # setup for start of recording
 pebble emu-button click back --emulator $1

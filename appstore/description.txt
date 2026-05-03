@@ -1,16 +1,16 @@
-A polished combination timer, alarm and stopwatch designed for quick-launch.
+Stopwatch / Alarm / Timer combo designed for quick launch.
 For everyday use for cooking, reminders and alarms. Touch controls; set with two swipes!
-Packed with unique, detailed behaviour to optimise frequent use.
+Packed with unique, detailed behaviour to optimise easy frequent use.
+
+!NEW! Touch controls (PT2/PR2): Set a timer or alarm with just two swipes!
+    - Touch, hold and drag to select hours then minutes; this clears all state and starts a new timer/alarm.
+    - Start touching from the middle to set a timer duration, or from the edge to set an alarm time
+    - To cancel, finish touching in the middle or don't select any minutes
 
 Specifically, this does 3 things I couldn't find anywhere else:
     - Start counting immediately on launch
     - Show all 4 relevant values (alarm time, duration, remaining, elapsed) at all times
     - Modify the duration at any point without any pause or confirmation
-
-Touch controls (PT2/PR2):
-    - Touch, hold and drag to select hours then minutes; this clears all state and starts a new timer/alarm.
-    - Start touching from the middle to set a timer duration, or from the edge to set an alarm time
-    - To cancel, finish touching in the middle or don't select any minutes
 
 Other features:
     - Timer modification controls optimised for speed (1h, 5m, 1m increments)
@@ -27,6 +27,7 @@ Other features:
     - Short vibe on start/stop for blind operation
     - Glance info in system app launcher
     - Pause, resume, restart, reset
+    - Round and rect, black, white and colour pebbles
 
 Controls:
     - Select/Back to choose modification digits (15/30 seconds available while under 2/5mins)
@@ -47,14 +48,14 @@ Controls:
     - Any button to dismiss alarm bell
 
 This app is great if you want to:
-    - Set a stopwatch/timer running fast without looking in the middle of cooking,
+    - Set a generic egg timer running fast without looking in the middle of cooking,
          and then change it as you go along
-    - Often quickly set an alarm to remind you about something in the near future
+    - Often quickly set an alarm clock to remind you about something in the near future
     - Set a wakeup alarm quick at a varying time just before you go to sleep
     - Do all of the above with a single app using one quick-launch slot
 
 Use (a) different app(s) if you want:
-    - More than one alarm/timer/stopwatch at once
+    - More than one alarm/timer/stopwatch at once i.e. multi timers
     - To slowly set a timer/alarm to a long but precise time
     - Automatically repeat alarms daily/weekly
     - Millisecond precision
@@ -62,5 +63,5 @@ Use (a) different app(s) if you want:
     - A history of previously set times
     - Voice control
 
-Suggestions for further improvements welcome.
+Suggestions for further improvements welcome, open source btw.
 Thanks for checking this out! Let me know if you end up using it :)
