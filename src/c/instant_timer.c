@@ -311,30 +311,37 @@ static time_t stopwatch_get_alarm_time(void) {
     }
 }
 
-static void stopwatch_tick(void){
+static void stopwatch_tick(void) {
     if (s_state.is_counting) {
         s_state.elapsed_time = time(NULL) - s_state.start_time;
     }
 }
 
-static void stopwatch_toggle(void){
-    if (s_state.is_counting) {
-        // pause; ensure elapsed time is up-to-date
-        stopwatch_tick();
-        s_state.is_counting = false;
-    } else {
+// Resume counting if not already
+static void stopwatch_resume(void) {
+    if (!s_state.is_counting) {
         // resume; reload a new start time from the elapsed time
         s_state.start_time = time(NULL) - s_state.elapsed_time;
         s_state.is_counting = true;
     }
 }
 
-static void stopwatch_restart(void){
+static void stopwatch_toggle(void) {
+    if (s_state.is_counting) {
+        // pause; ensure elapsed time is up-to-date
+        stopwatch_tick();
+        s_state.is_counting = false;
+    } else {
+        stopwatch_resume();
+    }
+}
+
+static void stopwatch_restart(void) {
     s_state.start_time = time(NULL);
     s_state.elapsed_time = 0;
 }
 
-static void stopwatch_clear(void){
+static void stopwatch_clear(void) {
     s_state.alarm_duration = 0;
     s_state.is_counting = true;
     stopwatch_restart();
@@ -827,11 +834,11 @@ static void do_clear(void){
 }
 
 #if PBL_TOUCH
-// set the duration straight to a new value and restart the timer
+// set the duration straight to a new value
 static void do_set(time_t duration) {
     vibe_for_start_stop();
-    stopwatch_restart();
     s_state.alarm_duration = duration;
+    stopwatch_resume();
     stopwatch_tick();
     update_alarm_duration();
     update_remaining();
@@ -1312,6 +1319,8 @@ static void new_config_handler(const Config* config) {
 #if PBL_TOUCH
 // handle new touch selection
 static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
+    stopwatch_tick(); // make sure elapsed_time is up-to-date
+
     time_t duration;
     if (is_duration) {
         duration = (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE);
@@ -1325,9 +1334,29 @@ static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
         const time_t target_time_tomorrow = mktime(target_time_tomorrow_struct);
         duration = (target_time_tomorrow - now) % (12 * SECONDS_PER_HOUR);
     }
-    LOG("SELECTED %s, %u, %u -> timer duration set to %us", BOOL_TO_STR(is_duration), hours, minutes, duration);
 
-    // start a fresh timer/alarm using the new duration
+    switch(config_get()->touchTimerMode) {
+    case TouchTimerMode_Clear:  // start a brand new timer from blank
+        stopwatch_restart();
+        break;
+    case TouchTimerMode_Duration:  // keep the elapsed time, set the base duration
+        if (!is_duration) {
+            duration += s_state.elapsed_time + 1;
+        }
+        break;  // nothing to do
+    case TouchTimerMode_Remaining:  // keep the elapsed time, set the remaining duration
+        duration += s_state.elapsed_time;
+        if (!is_duration) {
+            duration += 1;
+        }
+        break;
+    default:
+        ASSERT(false);
+        break;
+    }
+
+    LOG("SELECTED %d, %s, %u, %u -> timer duration set to %us",
+        config_get()->touchTimerMode, BOOL_TO_STR(is_duration), hours, minutes, duration);
     do_set(duration);
 
     // skip to ctrl mode

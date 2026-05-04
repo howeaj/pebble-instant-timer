@@ -173,6 +173,37 @@
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
       },
       {
+        "type": "select",
+        "messageKey": "touchTimerMode",
+        "label": "Affected values",
+        "defaultValue": 0,
+        "group": "touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "options": [
+          {
+            "label": "Set Duration, Clear Elapsed",
+            "value": "0"
+          },
+          {
+            "label": "Set Duration, Keep Elapsed",
+            "value": "1"
+          },
+          {
+            "label": "Set Remaining, Keep Elapsed",
+            "value": "2"
+          }
+        ]
+      },
+      {
+        "type": "toggle",
+        "messageKey": "invertTouchZones",
+        "label": "Invert Touch Zones",
+        "description": "Swap the initial touch zones to inner=alarm time, outer=duration",
+        "defaultValue": false,
+        "group": "touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+      },
+      {
         "type": "slider",
         "messageKey": "touchInputTimeoutDeciseconds",
         "label": "Input timeout (seconds)",
@@ -193,15 +224,6 @@
         "min": 0,
         "max": 1000,
         "step": 50,
-        "group": "touch",
-        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
-      },
-      {
-        "type": "toggle",
-        "messageKey": "invertTouchZones",
-        "label": "Invert Touch Zones",
-        "description": "Swap the initial touch zones to inner=alarm time, outer=duration",
-        "defaultValue": false,
         "group": "touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
       }

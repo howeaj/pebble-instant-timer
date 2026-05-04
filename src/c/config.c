@@ -26,9 +26,10 @@ static Config s_config = {
     .enableTouch = true,
     .touchInputTimeoutDeciseconds = 20,
     .touchMinDurationMs = 150,
-    .invertTouchZones = false
+    .invertTouchZones = false,
+    .touchTimerMode = 0,  // TouchTimerMode_Reset
 };
-STATIC_ASSERT(sizeof(Config) == 20);
+STATIC_ASSERT(sizeof(Config) == 21);
 
 static NewConfigCallback s_new_config_callback = NULL;
 
@@ -78,6 +79,8 @@ MACRO_END
 #define RECEIVE_CONFIG_BOOL(message_key) RECEIVE_CONFIG(message_key, (tuple->value->int32 == 1))
 #define RECEIVE_CONFIG_COLOR(message_key) RECEIVE_CONFIG(message_key, GColorFromHEX(tuple->value->int32))
 #define RECEIVE_CONFIG_INT(message_key) RECEIVE_CONFIG(message_key, tuple->value->int32)
+// A hack to work around https://github.com/pebble-dev/clay/issues/28. Only interprets the first digit.
+#define RECEIVE_CONFIG_ENUM(message_key) RECEIVE_CONFIG(message_key, (tuple->value->int32 - '0'))
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     Config saved_config = s_config;
@@ -96,7 +99,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     RECEIVE_CONFIG_INT(touchInputTimeoutDeciseconds);
     RECEIVE_CONFIG_INT(touchMinDurationMs);
     RECEIVE_CONFIG_BOOL(invertTouchZones);
-    STATIC_ASSERT(sizeof(Config) == 20);
+    RECEIVE_CONFIG_ENUM(touchTimerMode);
+    STATIC_ASSERT(sizeof(Config) == 21);
 
     if (memcmp(&saved_config, &s_config, sizeof(saved_config)) != 0) {
         LOG("New app config received");

@@ -287,8 +287,15 @@ static void update_selection_text() {
     text_layer_set_text_color(s_layer_central_text, color_inner_fg());
     text_layer_set_text(s_layer_central_text, s_central_text);
 
+    const char* explanation = (
+        s_is_duration
+        ? ((config_get()->touchTimerMode == TouchTimerMode_Remaining)
+            ? "remaining"
+            : "duration")
+        : "alarm time"
+    );
     text_layer_set_text_color(s_layer_explanation_text, color_inner_fg());
-    text_layer_set_text(s_layer_explanation_text, s_is_duration ? "duration" : "alarm time");
+    text_layer_set_text(s_layer_explanation_text, explanation);
 }
 
 static void draw_layer(Layer* layer, GContext* ctx) {
