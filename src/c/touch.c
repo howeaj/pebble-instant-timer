@@ -13,6 +13,7 @@
 
 #include "config.h"
 #include "macros.h"
+#include "misc.h"
 
 
 // the threshold between inner and outer ring
@@ -49,31 +50,6 @@ static TouchArea s_touch_area = TOUCH_AREA_NONE;
  Generic funcs
 ******************************************************************************/
 
-// Fill a circle with color
-static inline void graphics_color_circle(GContext* ctx, GPoint p, uint16_t radius, GColor color){
-    graphics_context_set_fill_color(ctx, color);
-    graphics_fill_circle(ctx, p, radius);
-}
-
-// TODO Fill a radial with color
-// static inline void graphics_color_circle(GContext* ctx, GRect bounds, GColor color){
-//     graphics_context_set_fill_color(ctx, color);
-//     const GRect bounds = {
-//         .origin = {0, 0}
-//         .size = {}
-//     }
-//     graphics_fill_circle(ctx, p, radius);
-//     graphics_fill_radial(ctx, bounds, GOvalScaleModeFillCircle, ring_thickness,
-//                          DEG_TO_TRIGANGLE(0), DEG_TO_TRIGANGLE(360));
-// }
-
-// Fill a rect with color
-static inline void graphics_color_rect(GContext *ctx, GRect rect, uint16_t corner_radius,
-                                GCornerMask corner_mask, GColor color){
-    graphics_context_set_fill_color(ctx, color);
-    graphics_fill_rect(ctx, rect, 0, GCornerNone);
-}
-
 // Return the euclidian distance squared between point a and b
 static inline uint16_t distance_squared(GPoint a, GPoint b) {
     return SQUARE(a.x - b.x) + SQUARE(a.y - b.y);
@@ -92,15 +68,6 @@ static inline int32_t angle_between_points(GPoint a, GPoint b) {
     return atan2_lookup(b.x - a.x, b.y - a.y);  // TODO why are x and y reversed ???????
 }
 
-// Return a GPoint that is `distance` away from `origin` at `angle`.
-// If `origin` is 0, this is equivalent to converting `angle` to a cartesian vector of magnitude `distance`.
-GPoint point_from_angle(GPoint origin, int32_t angle, int32_t distance) {
-    return (GPoint) {
-        .x = (int16_t)((sin_lookup(angle) * distance) / TRIG_MAX_RATIO) + origin.x,
-        .y = (int16_t)((-cos_lookup(angle) * distance) / TRIG_MAX_RATIO) + origin.y
-    };
-}
-
 // Convert an angle calculated from GPoints into screenspace by reflecting on the y-axis
 // i.e. so that 0 degrees is straight up on the screen, instead of down
 static inline uint32_t angle_to_screenspace(int32_t angle) {
@@ -116,30 +83,6 @@ static GPoint layer_get_center(Layer* layer) {
 /******************************************************************************
  Graphics
 ******************************************************************************/
-#if PBL_RECT
-#include <math.h>
-// TODO share with instant_timer.c
-// quake 3 sqrt
-static float fast_sqrt(const float x) {
-    const float xhalf = 0.5f * x;
-    union {
-        float x;
-        int i;
-    } u;
-    u.x = x;
-    u.i = 0x5f3759df - (u.i >> 1);  // initial guess
-    return x * u.x * (1.5f - xhalf * u.x * u.x);  // Newton step
-}
-
-/// Return the diagonal length of `rect`
-static int32_t grect_diagonal(GRect rect) {
-    return ceil(fast_sqrt(
-        (rect.size.h * rect.size.h)
-        + (rect.size.w * rect.size.w)
-    ));
-}
-#endif // PBL_RECT
-
 
 #define MAX_TEXT_SIZE (50)
 static TextLayer* s_layer_central_text = NULL;
@@ -456,7 +399,6 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
                     s_selected_minutes = -1;
                     update_selection_text();
                 }
-                // TODO show touch hint
             }
         } else {  // TOUCH_AREA_INNER
             LOG("Cancelled touch selection");

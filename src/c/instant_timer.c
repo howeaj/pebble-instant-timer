@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "macros.h"
+#include "misc.h"
 #include "persist_keys.h"
 #include "touch.h"
 
@@ -60,12 +61,11 @@ static TextLayer *s_text_layer_alarm_time;
 static TextLayer *s_text_layer_big_remaining;
 static TextLayer *s_text_layer_big_elapsed;
 static TextLayer *s_text_layer_small_elapsed;
-#define MAX_TEXT_SIZE (50)
-static char s_edit_indicator_text[MAX_TEXT_SIZE] = "^";
-static char s_alarm_duration_text[MAX_TEXT_SIZE] = "00h00m00s";
-static char s_alarm_time_text[MAX_TEXT_SIZE] = "00:00 PM";
-static char s_elapsed_text[MAX_TEXT_SIZE] = "00h00m00s";
-static char s_remaining_text[MAX_TEXT_SIZE] = "00h00m00s";
+static char s_edit_indicator_text[MAX_TIME_TEXT_SIZE] = "^";
+static char s_alarm_duration_text[MAX_TIME_TEXT_SIZE] = "00h00m00s";
+static char s_alarm_time_text[MAX_TIME_TEXT_SIZE] = "00:00 PM";
+static char s_elapsed_text[MAX_TIME_TEXT_SIZE] = "00h00m00s";
+static char s_remaining_text[MAX_TIME_TEXT_SIZE] = "00h00m00s";
 
 // action bar
 static ActionBarLayer *s_action_bar;
@@ -168,40 +168,6 @@ static void snprintf_hms(char* buffer, size_t size, time_t seconds, bool truncat
     }
 }
 
-// Return the time format for strftime
-static inline const char* time_fmt(void) {
-    return clock_is_24h_style() ? "%H:%M" : "%I:%M %p";
-}
-
-
-#if !PBL_PLATFORM_APLITE
-// format a time_t into a string
-static void snprintf_time(char* target, size_t size, const char* fmt, time_t time) {
-    char time_str[MAX_TEXT_SIZE] = {0};
-    strftime(time_str, sizeof(time_str), time_fmt(), localtime(&time));
-    snprintf(target, size, fmt, time_str);
-}
-#endif // !PBL_PLATFORM_APLITE
-
-// Given a GRect that is the entire root window frame,
-// return a GRect shrunk for the status and action bars.
-static GRect reduce_frame_for_system_bars(const GRect frame) {
-#if PBL_ROUND
-    return frame;
-#else // PBL_RECT
-    return (GRect) {
-        .origin = {
-            .x = frame.origin.x,
-            .y = frame.origin.y + STATUS_BAR_LAYER_HEIGHT
-        },
-        .size = {
-            .w = frame.size.w - ACTION_BAR_WIDTH,
-            .h = frame.size.h - STATUS_BAR_LAYER_HEIGHT
-        }
-    };
-#endif // PBL_RECT
-}
-
 /// Animate `layer` to `appear` or disappear by scrolling pixels vertically `from_below` or above.
 /// `was_visible` a pointer to a static bool; will be updated
 static void animate_scroll(Layer *layer, bool appear, bool from_below, bool* was_visible) {
@@ -229,34 +195,6 @@ static void animate_scroll(Layer *layer, bool appear, bool from_below, bool* was
         animation_schedule(animation);
     }
     *was_visible = appear;
-}
-
-
-#if PBL_RECT
-// quake 3 sqrt
-static float fast_sqrt(const float x) {
-    const float xhalf = 0.5f * x;
-    union {
-        float x;
-        int i;
-    } u;
-    u.x = x;
-    u.i = 0x5f3759df - (u.i >> 1);  // initial guess
-    return x * u.x * (1.5f - xhalf * u.x * u.x);  // Newton step
-}
-
-/// Return the diagonal length of `rect`
-static int32_t grect_diagonal(GRect rect) {
-    return ceil(fast_sqrt(
-        (rect.size.h * rect.size.h)
-        + (rect.size.w * rect.size.w)
-    ));
-}
-#endif // PBL_RECT
-
-// set the value at `index` in `bitmap`'s palette to `color`
-static void gbitmap_set_color(GBitmap* bitmap, size_t index, GColor color) {
-    gbitmap_get_palette(bitmap)[index] = color;
 }
 
 
@@ -527,7 +465,7 @@ static void alarm_schedule_any_wakeup(void) {
         ASSERT(s_state.alarm_wakeup_id >= 0);
 
         const struct tm* alarm_time_local = localtime(&alarm_time);
-        char time_str[MAX_TEXT_SIZE] = {0};
+        char time_str[MAX_TIME_TEXT_SIZE] = {0};
         const size_t num_bytes = strftime(time_str, sizeof(time_str), "%H:%M:%S", alarm_time_local);
         ASSERT(num_bytes);
         LOG("alarm_wakeup_id = %d at %s", s_state.alarm_wakeup_id, time_str);
@@ -1039,6 +977,63 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
     }
 }
 
+#if PBL_TOUCH
+// handle new touch selection
+static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
+    stopwatch_tick(); // make sure elapsed_time is up-to-date
+
+    time_t duration;
+    if (is_duration) {
+        duration = (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE);
+    } else {
+        const time_t now = time(NULL);
+        struct tm* target_time_tomorrow_struct = localtime(&now);
+        target_time_tomorrow_struct->tm_mday += 1;
+        target_time_tomorrow_struct->tm_hour = hours;
+        target_time_tomorrow_struct->tm_min = minutes;
+        target_time_tomorrow_struct->tm_sec = 0;
+        const time_t target_time_tomorrow = mktime(target_time_tomorrow_struct);
+        duration = (target_time_tomorrow - now) % (12 * SECONDS_PER_HOUR);
+    }
+
+    switch(config_get()->touchTimerMode) {
+    case TouchTimerMode_Clear:  // start a brand new timer from blank
+        stopwatch_restart();
+        break;
+    case TouchTimerMode_Duration:  // keep the elapsed time, set the base duration
+        if (!is_duration) {
+            duration += s_state.elapsed_time + 1;
+        }
+        break;  // nothing to do
+    case TouchTimerMode_Remaining:  // keep the elapsed time, set the remaining duration
+        duration += s_state.elapsed_time;
+        if (!is_duration) {
+            duration += 1;
+        }
+        break;
+    default:
+        ASSERT(false);
+        break;
+    }
+
+    LOG("SELECTED %d, %s, %u, %u -> timer duration set to %us",
+        config_get()->touchTimerMode, BOOL_TO_STR(is_duration), hours, minutes, duration);
+    do_set(duration);
+
+    // skip to ctrl mode
+    s_mode = MODE_CTRL;
+    update_mode();
+    update_action_bar();
+
+    update_tick_subscription(SECOND_UNIT);
+}
+
+// handle raw touch events
+static void handle_touch_event(const TouchEvent *event, void *context) {
+    update_tick_subscription(SECOND_UNIT);
+}
+#endif // PBL_TOUCH
+
 static void battery_state_handler(BatteryChargeState charge) {
     TRACE("battery_state_handler");
     static bool was_plugged = false;
@@ -1315,63 +1310,6 @@ static void new_config_handler(const Config* config) {
 
     layer_mark_dirty(window_get_root_layer(s_main_window));
 }
-
-#if PBL_TOUCH
-// handle new touch selection
-static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
-    stopwatch_tick(); // make sure elapsed_time is up-to-date
-
-    time_t duration;
-    if (is_duration) {
-        duration = (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE);
-    } else {
-        const time_t now = time(NULL);
-        struct tm* target_time_tomorrow_struct = localtime(&now);
-        target_time_tomorrow_struct->tm_mday += 1;
-        target_time_tomorrow_struct->tm_hour = hours;
-        target_time_tomorrow_struct->tm_min = minutes;
-        target_time_tomorrow_struct->tm_sec = 0;
-        const time_t target_time_tomorrow = mktime(target_time_tomorrow_struct);
-        duration = (target_time_tomorrow - now) % (12 * SECONDS_PER_HOUR);
-    }
-
-    switch(config_get()->touchTimerMode) {
-    case TouchTimerMode_Clear:  // start a brand new timer from blank
-        stopwatch_restart();
-        break;
-    case TouchTimerMode_Duration:  // keep the elapsed time, set the base duration
-        if (!is_duration) {
-            duration += s_state.elapsed_time + 1;
-        }
-        break;  // nothing to do
-    case TouchTimerMode_Remaining:  // keep the elapsed time, set the remaining duration
-        duration += s_state.elapsed_time;
-        if (!is_duration) {
-            duration += 1;
-        }
-        break;
-    default:
-        ASSERT(false);
-        break;
-    }
-
-    LOG("SELECTED %d, %s, %u, %u -> timer duration set to %us",
-        config_get()->touchTimerMode, BOOL_TO_STR(is_duration), hours, minutes, duration);
-    do_set(duration);
-
-    // skip to ctrl mode
-    s_mode = MODE_CTRL;
-    update_mode();
-    update_action_bar();
-
-    update_tick_subscription(SECOND_UNIT);
-}
-
-// handle raw touch events
-static void handle_touch_event(const TouchEvent *event, void *context) {
-    update_tick_subscription(SECOND_UNIT);
-}
-#endif // PBL_TOUCH
 
 
 /******************************************************************************
