@@ -365,7 +365,7 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
         cancel_timeout();
         if (s_select_mode == SELECTMODE_NONE) {
             s_is_duration = (s_touch_area == TOUCH_AREA_INNER);
-            if (config_get()->invertTouchZones) {
+            if (config_get()->touchZoneAssignment == TouchZoneAssignment_Invert) {
                 s_is_duration = !s_is_duration;
             }
             s_select_mode = SELECTMODE_HOUR;

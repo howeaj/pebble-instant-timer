@@ -1,6 +1,10 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
+    - Config down-from-zero wrap values
+    - Config battery saving timeouts / thresholds / services
+    - Config only enable touch when already active (i.e. backlight already on)
+    - Long press on rightmost X to save & exit, if its faster than back-long-press?
     - some kind of tutorial or help mode?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
     - configuration via clay

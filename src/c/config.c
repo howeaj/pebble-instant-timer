@@ -26,7 +26,7 @@ static Config s_config = {
     .enableTouch = true,
     .touchInputTimeoutDeciseconds = 20,
     .touchMinDurationMs = 150,
-    .invertTouchZones = false,
+    .touchZoneAssignment = 0,  // TouchZoneAssignment_Default
     .touchTimerMode = 0,  // TouchTimerMode_Reset
 };
 STATIC_ASSERT(sizeof(Config) == 21);
@@ -98,7 +98,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     RECEIVE_CONFIG_BOOL(enableTouch);
     RECEIVE_CONFIG_INT(touchInputTimeoutDeciseconds);
     RECEIVE_CONFIG_INT(touchMinDurationMs);
-    RECEIVE_CONFIG_BOOL(invertTouchZones);
+    RECEIVE_CONFIG_ENUM(touchZoneAssignment);
     RECEIVE_CONFIG_ENUM(touchTimerMode);
     STATIC_ASSERT(sizeof(Config) == 21);
 

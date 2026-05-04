@@ -7,6 +7,11 @@
 #include "macros.h"
 
 
+typedef enum TouchZoneAssignment {
+    TouchZoneAssignment_Default = 0,  // inner=duration, outer=alarm
+    TouchZoneAssignment_Invert = 1,  // inner=alarm, outer=duration
+} TouchZoneAssignment;
+
 typedef enum TouchTimerMode {
     TouchTimerMode_Clear = 0,
     TouchTimerMode_Duration = 1,
@@ -32,7 +37,7 @@ typedef struct Config {
     bool enableTouch;
     int32_t touchInputTimeoutDeciseconds;  // how long you have to start the second touch before it cancels
     int32_t touchMinDurationMs;  // minimum duration for touches on the outer ring to register
-    bool invertTouchZones;  // swap the meaning of the inner/outer ring for the initial touch
+    TouchZoneAssignment touchZoneAssignment;  // the meaning of the inner/outer ring for the initial touch
     TouchTimerMode touchTimerMode;
 } Config;
 // This doesn't need to change as long as you only append new fields

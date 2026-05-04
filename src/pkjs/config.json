@@ -174,9 +174,27 @@
       },
       {
         "type": "select",
+        "messageKey": "touchZoneAssignment",
+        "label": "Touch Zones",
+        "defaultValue": "0",
+        "group": "touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "options": [
+          {
+            "label": "Inner=Duration, Outer=Alarm Time",
+            "value": "0"
+          },
+          {
+            "label": "Inner=Alarm Time, Outer=Duration",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "type": "select",
         "messageKey": "touchTimerMode",
         "label": "Affected values",
-        "defaultValue": 0,
+        "defaultValue": "0",
         "group": "touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
         "options": [
@@ -193,15 +211,6 @@
             "value": "2"
           }
         ]
-      },
-      {
-        "type": "toggle",
-        "messageKey": "invertTouchZones",
-        "label": "Invert Touch Zones",
-        "description": "Swap the initial touch zones to inner=alarm time, outer=duration",
-        "defaultValue": false,
-        "group": "touch",
-        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
       },
       {
         "type": "slider",

@@ -41,7 +41,7 @@
       "enableTouch",
       "touchInputTimeoutDeciseconds",
       "touchMinDurationMs",
-      "invertTouchZones",
+      "touchZoneAssignment",
       "touchTimerMode"
     ],
     "resources": {
