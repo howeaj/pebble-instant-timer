@@ -194,7 +194,7 @@
         "type": "select",
         "messageKey": "touchTimerMode",
         "label": "Affected values",
-        "defaultValue": "0",
+        "defaultValue": "1",
         "group": "touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
         "options": [

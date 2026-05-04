@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.2.1
+
+- Change the default "Affected Values" touch config to "Set Duration, Keep Elapsed" to match button controls
+
 ## 2.2.0
 
 - Increase size of the central touch zone

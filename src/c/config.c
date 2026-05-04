@@ -27,7 +27,7 @@ static Config s_config = {
     .touchInputTimeoutDeciseconds = 20,
     .touchMinDurationMs = 150,
     .touchZoneAssignment = 0,  // TouchZoneAssignment_Default
-    .touchTimerMode = 0,  // TouchTimerMode_Reset
+    .touchTimerMode = 1,  // TouchTimerMode_Duration
 };
 STATIC_ASSERT(sizeof(Config) == 21);
 
