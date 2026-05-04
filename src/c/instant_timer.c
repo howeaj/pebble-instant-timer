@@ -953,7 +953,7 @@ static void schedule_tick_subscription_update(uint32_t timeout_ms, TimeUnits upd
         - if we're in "stopwatch mode" and 1min hasn't elapsed yet
         - there's less than 3mins remaining on the timer (and every repeat of the ring on overtime)
         - if the alarm duration is very short (including after the alarm has expired; show looping overtime)
-        - if there are any signs of user activity (buttons, accel-tap/shake, battery charger, TODO screen touch)
+        - if there are any signs of user activity (buttons, accel-tap/shake, battery charger, screen touch)
         - if the alarm is pulsing (especially because the overtime counter is below ALARM_PULSE_DURATION)
 */
 static void update_tick_subscription(TimeUnits new_update_rate) {
@@ -1366,6 +1366,11 @@ static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
 
     update_tick_subscription(SECOND_UNIT);
 }
+
+// handle raw touch events
+static void handle_touch_event(const TouchEvent *event, void *context) {
+    update_tick_subscription(SECOND_UNIT);
+}
 #endif // PBL_TOUCH
 
 
@@ -1535,7 +1540,7 @@ static void main_window_load(Window *window) {
 
     // touch selector
 #if PBL_TOUCH
-    touch_create(window_layer, &touch_callback);
+    touch_create(window_layer, &touch_callback, &handle_touch_event);
 #endif // PBL_TOUCH
 
     // exit screen

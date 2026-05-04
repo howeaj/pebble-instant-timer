@@ -3,6 +3,7 @@
 ## 2.2.0
 
 - Increase size of the central touch zone
+- Touches reveal seconds if hidden (synced with backlight)
 - New user-requested config options:
   - Swap duration vs alarms on the outer vs inner touch zone
   - Retain elapsed time when setting duration with touch

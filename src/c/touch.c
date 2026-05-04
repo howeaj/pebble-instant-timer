@@ -23,6 +23,7 @@ static Layer* s_layer = NULL;
 static AppTimer* s_cancel_timer = NULL;
 
 static TouchSelectionCallback s_callback = NULL;
+static TouchServiceHandler s_parent_handler = NULL; // optional additional handler specified by this layer's parent
 
 typedef enum SelectMode {
     SELECTMODE_NONE = 0,
@@ -469,6 +470,10 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
     }
 
     layer_mark_dirty(s_layer);
+
+    if (s_parent_handler != NULL) {
+        s_parent_handler(event, context);
+    }
 }
 
 
@@ -497,7 +502,7 @@ void touch_enable(bool enable) {
     }
 }
 
-void touch_create(Layer* parent, TouchSelectionCallback callback) {
+void touch_create(Layer* parent, TouchSelectionCallback callback, TouchServiceHandler handler) {
     ASSERT(s_layer == NULL);
     if (touch_service_is_enabled() && (s_layer == NULL)) {
         // primary layer
@@ -525,7 +530,9 @@ void touch_create(Layer* parent, TouchSelectionCallback callback) {
         text_layer_set_background_color(s_layer_explanation_text, GColorClear);
         layer_add_child(s_layer, (Layer*)s_layer_explanation_text);
         layer_set_hidden(s_layer, true);
+
         s_callback = callback;
+        s_parent_handler = handler;
     }
 }
 

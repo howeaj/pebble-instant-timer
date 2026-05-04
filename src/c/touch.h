@@ -9,7 +9,7 @@
 
 typedef void (*TouchSelectionCallback)(bool is_duration, uint8_t hours, uint8_t minutes);
 
-void touch_create(Layer* parent, TouchSelectionCallback callback);
+void touch_create(Layer* parent, TouchSelectionCallback callback, TouchServiceHandler handler);
 void touch_destroy(void);
 void touch_enable(bool enable);
 bool touch_in_progress(void);
