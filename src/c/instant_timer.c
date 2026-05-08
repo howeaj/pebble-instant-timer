@@ -834,6 +834,9 @@ static void exit_handler(void* context) {
 
 static void do_exit(bool save) {
     s_save = save;
+    if (s_state.is_counting && !save) {
+        vibe_for_start_stop();
+    }
     animate_exit_screen(save, true);
     app_timer_register(200, exit_handler, NULL);
 }

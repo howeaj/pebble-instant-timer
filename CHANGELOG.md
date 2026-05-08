@@ -3,6 +3,7 @@
 ## 2.3.0
 
 - Config alarm vibes: double, long or short
+- Add missing start/stop vibe for exit-and-delete
 
 ## 2.2.1
 
