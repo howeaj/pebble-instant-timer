@@ -5,11 +5,10 @@
     - Config battery saving timeouts / thresholds / services
     - Config only enable touch when already active (i.e. backlight already on)
     - Long press on rightmost X to save & exit, if its faster than back-long-press?
+        - and config option to always exit all the way to watchface
+    - touch windup gesture to increase values
     - some kind of tutorial or help mode?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
-    - configuration via clay
-        - disable battery saving rate reduction (or change its timeout)
-    - investigate https://github.com/pebble-hacks/pebble_glancing_demo/blob/master/src/glancing_api.h
     - insert timeline pin
         - "PKJS when running on the new Core app can just do Pebble.insertTimelinePin"
         - https://github.com/CometDog/pebble-kite/blob/main/src/ts/timeline.ts#L6-L30
@@ -400,15 +399,24 @@ static bool alarm_clear(void) {
 }
 
 static void alarm_pulse(void) {
-    LOG("ALARM PULSE!");
-    vibes_double_pulse();
-    // TODO copy the pebble's builtin alarm pattern
-    // static const uint32_t segments[] = { 200, 100, 400 };
-    // VibePattern pat = {
-    //   .durations = segments,
-    //   .num_segments = ARRAY_LENGTH(segments),
-    // };
-    // vibes_enqueue_custom_pattern(pat);
+    switch (config_get()->alarmVibePattern) {
+    case AlarmVibePattern_Double:
+        LOG("ALARM PULSE! - double");
+        vibes_double_pulse();
+        break;
+    case AlarmVibePattern_Short:
+        LOG("ALARM PULSE! - short");
+        vibes_short_pulse();
+        break;
+    case AlarmVibePattern_Long:
+        LOG("ALARM PULSE! - long");
+        vibes_long_pulse();
+        break;
+    default:
+        ASSERT(false);
+        vibes_double_pulse();
+        break;
+    }
 }
 
 static bool alarm_is_pulsing(void) {

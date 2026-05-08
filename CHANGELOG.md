@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.0
+
+- Config alarm vibes: double, long or short
+
 ## 2.2.1
 
 - Change the default "Affected Values" touch config to "Set Duration, Keep Elapsed" to match button controls

@@ -8,6 +8,35 @@
     "items": [
       {
         "type": "heading",
+        "defaultValue": "Vibes"
+      },
+      {
+        "type": "select",
+        "messageKey": "alarmVibePattern",
+        "label": "Alarm vibe pattern",
+        "defaultValue": "0",
+        "options": [
+          {
+            "label": "Double",
+            "value": "0"
+          },
+          {
+            "label": "Short",
+            "value": "1"
+          },
+          {
+            "label": "Long",
+            "value": "2"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "section",
+    "items": [
+      {
+        "type": "heading",
         "defaultValue": "Colours"
       },
       {
@@ -175,7 +204,7 @@
       {
         "type": "select",
         "messageKey": "touchZoneAssignment",
-        "label": "Touch Zones",
+        "label": "Touch zones",
         "defaultValue": "0",
         "group": "touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],

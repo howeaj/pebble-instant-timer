@@ -28,8 +28,10 @@ static Config s_config = {
     .touchMinDurationMs = 150,
     .touchZoneAssignment = 0,  // TouchZoneAssignment_Default
     .touchTimerMode = 1,  // TouchTimerMode_Duration
+
+    .alarmVibePattern = 0,  // AlarmVibePattern_Double
 };
-STATIC_ASSERT(sizeof(Config) == 21);
+STATIC_ASSERT(sizeof(Config) == 22);
 
 static NewConfigCallback s_new_config_callback = NULL;
 
@@ -100,7 +102,8 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     RECEIVE_CONFIG_INT(touchMinDurationMs);
     RECEIVE_CONFIG_ENUM(touchZoneAssignment);
     RECEIVE_CONFIG_ENUM(touchTimerMode);
-    STATIC_ASSERT(sizeof(Config) == 21);
+    RECEIVE_CONFIG_ENUM(alarmVibePattern);
+    STATIC_ASSERT(sizeof(Config) == 22);
 
     if (memcmp(&saved_config, &s_config, sizeof(saved_config)) != 0) {
         LOG("New app config received");
