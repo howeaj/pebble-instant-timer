@@ -1,9 +1,10 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
+    - Config only enable touch when already active (i.e. backlight already on)
+    - Minimum finger off time for second touch to register
     - Config down-from-zero wrap values
     - Config battery saving timeouts / thresholds / services
-    - Config only enable touch when already active (i.e. backlight already on)
     - Long press on rightmost X to save & exit, if its faster than back-long-press?
         - and config option to always exit all the way to watchface
     - touch windup gesture to increase values
@@ -424,7 +425,7 @@ static bool alarm_is_pulsing(void) {
 }
 
 // Return the time at which alarm pulses would automatically end
-static time_t alarm_get_pulse_end_time() {
+static time_t alarm_get_pulse_end_time(void) {
     return s_state.start_time + s_state.alarm_duration + ALARM_PULSE_DURATION;
 }
 

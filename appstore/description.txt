@@ -20,7 +20,7 @@ Other features:
         - Auto switch between seconds/minutes update rate, synced with backlight and/or remaining time
         - Zero background power use
         - Auto-cancel alarm vibe after 1m
-    - Runs in background, auto-opens for alarm
+    - Runs in background, wakeup for alarm
     - Counts overtime after alarm vibe
     - After expiry, set a new alarm from the same base just by increasing the duration again
     - Short vibe on start/stop for blind operation

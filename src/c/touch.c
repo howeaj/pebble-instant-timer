@@ -155,13 +155,8 @@ static void animate_circle(bool appear) {
 static void draw_background(const GRect* bounds, const GPoint* centre, GContext *ctx) {
     const int32_t outer_final_radius = PBL_IF_ROUND_ELSE(PBL_DISPLAY_WIDTH / 2, grect_diagonal(*bounds) / 2);
     graphics_context_set_antialiased(ctx, false);
-    if (s_is_duration) {
-        graphics_color_circle(ctx, *centre, MUL_FRACT(outer_final_radius, s_circle_percent, 100), color_outer_bg());
-        graphics_color_circle(ctx, *centre, MUL_FRACT(THRESHOLD_RADIUS, s_circle_percent, 100), color_inner_bg());
-    } else {
-        graphics_color_circle(ctx, *centre, MUL_FRACT(outer_final_radius, s_circle_percent, 100), color_outer_bg());
-        graphics_color_circle(ctx, *centre, MUL_FRACT(THRESHOLD_RADIUS, s_circle_percent, 100), color_inner_bg());
-    }
+    graphics_color_circle(ctx, *centre, MUL_FRACT(outer_final_radius, s_circle_percent, 100), color_outer_bg());
+    graphics_color_circle(ctx, *centre, MUL_FRACT(THRESHOLD_RADIUS, s_circle_percent, 100), color_inner_bg());
     graphics_context_set_antialiased(ctx, true);
 }
 
@@ -218,7 +213,7 @@ static void draw_clock_indices(const GRect* bounds, GContext *ctx) {
     }
 }
 
-static void update_selection_text() {
+static void update_selection_text(void) {
     if (s_selected_hours < 0) {
         snprintf(s_central_text, sizeof(s_central_text), s_is_duration ? "--h--m" : "--:--");
     } else if (s_selected_minutes < 0) {
