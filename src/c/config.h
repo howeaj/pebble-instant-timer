@@ -1,56 +1,21 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
+// See documentation in config.c
+
 #pragma once
 
 #include <pebble.h>
 
-#include "macros.h"
-
-
-typedef enum TouchZoneAssignment {
-    TouchZoneAssignment_Default = 0,  // inner=duration, outer=alarm
-    TouchZoneAssignment_Invert = 1,  // inner=alarm, outer=duration
-} TouchZoneAssignment;
-
-typedef enum TouchTimerMode {
-    TouchTimerMode_Clear = 0,
-    TouchTimerMode_Duration = 1,
-    TouchTimerMode_Remaining = 2,
-} TouchTimerMode;
-
-typedef enum AlarmVibePattern {
-    AlarmVibePattern_Double = 0,
-    AlarmVibePattern_Short = 1,
-    AlarmVibePattern_Long = 2,
-} AlarmVibePattern;
+#include "config_defs.h"
 
 
 #pragma pack(push, 1)  // prevent unpredictable format changes
 
-// The names of these fields should match the messageKeys in config.json and package.json.
+#define CONFIG_STRUCT_MEMBER(_conftype, _ctype, _message_key, _default) _ctype _message_key;
 typedef struct Config {
-    GColor textColor;
-    GColor bgColor;
-    GColor bgColorImage;
-    GColor ringColorEmpty;
-    GColor ringColorRemaining;
-    GColor ringColorOvertime;
-    GColor statusBarBgColor;
-    GColor statusBarTextColor;
-    GColor actionBarBgColor;
-    GColor actionBarIconColor;
-
-    bool enableTouch;
-    int32_t touchInputTimeoutDeciseconds;  // how long you have to start the second touch before it cancels
-    int32_t touchMinDurationMs;  // minimum duration for touches on the outer ring to register
-    TouchZoneAssignment touchZoneAssignment;  // the meaning of the inner/outer ring for the initial touch
-    TouchTimerMode touchTimerMode;
-
-    AlarmVibePattern alarmVibePattern;
+    X_CONFIG_OPTIONS(CONFIG_STRUCT_MEMBER)
 } Config;
-// This doesn't need to change as long as you only append new fields
-// and don't change the meaning of existing data.
-#define PERSIST_CONFIG_VERSION (1)
+#undef CONFIG_STRUCT_MEMBER
 
 #pragma pack(pop)
 

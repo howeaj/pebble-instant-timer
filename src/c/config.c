@@ -1,7 +1,16 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
-// App configuration via clay
-// pebble package install @rebble/clay
+/** App configuration via Clay (pebble package install @rebble/clay)
+
+    To use this module, you must define the following:
+        PERSIST_KEY_CONFIG_VERSION and PERSIST_KEY_CONFIG (see persist_keys.h)
+        A file named config_defs.h which defines:
+            X_CONFIG_OPTIONS
+            PERSIST_CONFIG_VERSION
+
+    TODO:
+        Don't take over the entire app message inbox.
+*/
 
 #include "config.h"
 
@@ -10,34 +19,17 @@
 #include "macros.h"
 #include "persist_keys.h"
 
-// This should match the defaults in config.json and Dark theme in index.js
+#define CONFIG_STRUCT_DEFAULT(_conftype, _ctype, _message_key, _default) ._message_key = _default,
 static Config s_config = {
-    .textColor = GColorWhite,
-    .bgColor = GColorBlack,
-    .bgColorImage = GColorBulgarianRose,
-    .ringColorEmpty = GColorDarkGray,
-    .ringColorRemaining = PBL_IF_COLOR_ELSE(GColorGreen, GColorWhite),
-    .ringColorOvertime = PBL_IF_COLOR_ELSE(GColorRed, GColorWhite),
-    .statusBarBgColor = GColorBlack,
-    .statusBarTextColor = GColorWhite,
-    .actionBarBgColor = GColorBlack,
-    .actionBarIconColor = GColorWhite,
-
-    .enableTouch = true,
-    .touchInputTimeoutDeciseconds = 20,
-    .touchMinDurationMs = 150,
-    .touchZoneAssignment = 0,  // TouchZoneAssignment_Default
-    .touchTimerMode = 1,  // TouchTimerMode_Duration
-
-    .alarmVibePattern = 0,  // AlarmVibePattern_Double
+    X_CONFIG_OPTIONS(CONFIG_STRUCT_DEFAULT)
 };
-STATIC_ASSERT(sizeof(Config) == 22);
+#undef CONFIG_STRUCT_DEFAULT
 
 static NewConfigCallback s_new_config_callback = NULL;
 
 
 /******************************************************************************
- Local watch persistence
+ Private methods; Local watch persistence
 ******************************************************************************/
 
 static bool is_local_persist_written_and_current_version(void) {
@@ -48,7 +40,7 @@ static void local_persist_load(void) {
     StatusCode status = E_DOES_NOT_EXIST;
     if (is_local_persist_written_and_current_version()){
         status = persist_read_data(PERSIST_KEY_CONFIG, &s_config, sizeof(s_config));
-        LOG("Loaded config: touchEnable=%s", BOOL_TO_STR(s_config.enableTouch));
+        LOG("Loaded config from persistent storage");
     }
     if (status <= 0) {
         LOG("Config not loaded from persistent storage (%d)", status);
@@ -67,7 +59,7 @@ static void local_persist_save(void) {
 
 
 /******************************************************************************
- Receive config from phone
+ Private methods; Receive config from phone
 ******************************************************************************/
 
 #define RECEIVE_CONFIG(message_key, convert) MACRO_START \
@@ -75,7 +67,7 @@ static void local_persist_save(void) {
     if (tuple) { \
         s_config.message_key = convert; \
     } else { \
-        LOG("Missing config: " #message_key); \
+        LOG("ERR: " #message_key); \
     } \
 MACRO_END
 #define RECEIVE_CONFIG_BOOL(message_key) RECEIVE_CONFIG(message_key, (tuple->value->int32 == 1))
@@ -87,23 +79,9 @@ MACRO_END
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
     Config saved_config = s_config;
 
-    RECEIVE_CONFIG_COLOR(textColor);
-    RECEIVE_CONFIG_COLOR(bgColor);
-    RECEIVE_CONFIG_COLOR(bgColorImage);
-    RECEIVE_CONFIG_COLOR(ringColorEmpty);
-    RECEIVE_CONFIG_COLOR(ringColorRemaining);
-    RECEIVE_CONFIG_COLOR(ringColorOvertime);
-    RECEIVE_CONFIG_COLOR(statusBarBgColor);
-    RECEIVE_CONFIG_COLOR(statusBarTextColor);
-    RECEIVE_CONFIG_COLOR(actionBarBgColor);
-    RECEIVE_CONFIG_COLOR(actionBarIconColor);
-    RECEIVE_CONFIG_BOOL(enableTouch);
-    RECEIVE_CONFIG_INT(touchInputTimeoutDeciseconds);
-    RECEIVE_CONFIG_INT(touchMinDurationMs);
-    RECEIVE_CONFIG_ENUM(touchZoneAssignment);
-    RECEIVE_CONFIG_ENUM(touchTimerMode);
-    RECEIVE_CONFIG_ENUM(alarmVibePattern);
-    STATIC_ASSERT(sizeof(Config) == 22);
+#define CONFIG_STRUCT_RECEIVE(_conftype, _ctype, _message_key, _default) RECEIVE_CONFIG_##_conftype(_message_key);
+    X_CONFIG_OPTIONS(CONFIG_STRUCT_RECEIVE)
+#undef CONFIG_STRUCT_RECEIVE
 
     if (memcmp(&saved_config, &s_config, sizeof(saved_config)) != 0) {
         LOG("New app config received");
