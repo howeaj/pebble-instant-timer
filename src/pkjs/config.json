@@ -221,6 +221,24 @@
       },
       {
         "type": "select",
+        "messageKey": "touchTimerSetMethod",
+        "label": "Timer duration set method",
+        "defaultValue": "0",
+        "group": "touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "options": [
+          {
+            "label": "Single touch; wind up for hours",
+            "value": "0"
+          },
+          {
+            "label": "Two touches; hours then minutes (like alarm)",
+            "value": "1"
+          }
+        ]
+      },
+      {
+        "type": "select",
         "messageKey": "touchTimerMode",
         "label": "Affected values",
         "defaultValue": "1",

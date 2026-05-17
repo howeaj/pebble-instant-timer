@@ -9,7 +9,7 @@
 #include "macros.h"
 
 
-/** The persist data version for dealing with backwards-incompatible changes.g
+/** The persist data version for dealing with backwards-incompatible changes.
     This doesn't need to change as long as you only append new fields
     and don't change the messageKeys or meaning of existing data.
     Note lowest allowed value is 1.
@@ -39,8 +39,9 @@
     MACRO(INT,   int32_t,             touchInputTimeoutDeciseconds, 20) /*how long you have to start the second touch before it cancels*/ \
     MACRO(INT,   int32_t,             touchMinDurationMs,           150) /*minimum duration for touches on the outer ring to register*/ \
     MACRO(ENUM,  TouchZoneAssignment, touchZoneAssignment,          TouchZoneAssignment_Default) \
-    MACRO(ENUM,  TouchTimerMode,      touchTimerMode,               TouchTimerMode_Duration) \
+    MACRO(ENUM,  TouchTimerEffect,    touchTimerMode,               TouchTimerEffect_Duration) \
     MACRO(ENUM,  AlarmVibePattern,    alarmVibePattern,             AlarmVibePattern_Double) \
+    MACRO(ENUM,  TouchTimerSetMethod, touchTimerSetMethod,          TouchTimerSetMethod_MinuteWindup) \
 /* end of X_CONFIG_OPTIONS */
 
 
@@ -51,11 +52,11 @@ typedef enum TouchZoneAssignment {
 } TouchZoneAssignment;
 
 // What values the touch timer affects
-typedef enum TouchTimerMode {
-    TouchTimerMode_Clear = 0,
-    TouchTimerMode_Duration = 1,
-    TouchTimerMode_Remaining = 2,
-} TouchTimerMode;
+typedef enum TouchTimerEffect {
+    TouchTimerEffect_Clear = 0,
+    TouchTimerEffect_Duration = 1,
+    TouchTimerEffect_Remaining = 2,
+} TouchTimerEffect;
 
 // Alarm vibe pattern
 typedef enum AlarmVibePattern {
@@ -63,3 +64,9 @@ typedef enum AlarmVibePattern {
     AlarmVibePattern_Short = 1,
     AlarmVibePattern_Long = 2,
 } AlarmVibePattern;
+
+// How many touches are required when setting the timer duration
+typedef enum TouchTimerSetMethod {
+    TouchTimerSetMethod_MinuteWindup = 0,
+    TouchTimerSetMethod_TwoTouch = 1,
+} TouchTimerSetMethod;

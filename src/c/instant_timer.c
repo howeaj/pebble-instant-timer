@@ -1015,15 +1015,15 @@ static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
     }
 
     switch(config_get()->touchTimerMode) {
-    case TouchTimerMode_Clear:  // start a brand new timer from blank
+    case TouchTimerEffect_Clear:  // start a brand new timer from blank
         stopwatch_restart();
         break;
-    case TouchTimerMode_Duration:  // keep the elapsed time, set the base duration
+    case TouchTimerEffect_Duration:  // keep the elapsed time, set the base duration
         if (!is_duration) {
             duration += s_state.elapsed_time + 1;
         }
         break;  // nothing to do
-    case TouchTimerMode_Remaining:  // keep the elapsed time, set the remaining duration
+    case TouchTimerEffect_Remaining:  // keep the elapsed time, set the remaining duration
         duration += s_state.elapsed_time;
         if (!is_duration) {
             duration += 1;

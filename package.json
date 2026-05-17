@@ -43,7 +43,8 @@
       "touchMinDurationMs",
       "touchZoneAssignment",
       "touchTimerMode",
-      "alarmVibePattern"
+      "alarmVibePattern",
+      "touchTimerSetMethod"
     ],
     "resources": {
       "media": [

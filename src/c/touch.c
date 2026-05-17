@@ -228,7 +228,7 @@ static void update_selection_text(void) {
 
     const char* explanation = (
         s_is_duration
-        ? ((config_get()->touchTimerMode == TouchTimerMode_Remaining)
+        ? ((config_get()->touchTimerMode == TouchTimerEffect_Remaining)
             ? "remaining"
             : "duration")
         : "alarm time"
