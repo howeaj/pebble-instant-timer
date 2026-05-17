@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.1
+
+- Bugfix minutes input timeout after a touch below the minimum threshold
+
 ## 2.3.0
 
 - Config alarm vibes: double, long or short
@@ -24,7 +28,7 @@
 
 ## 2.0.1
 
-- Bugfix angle selection indicator updates while touching in the middle
+- Bugfix; angle selection indicator now updates while touching in the middle
 
 ## 2.0.0
 

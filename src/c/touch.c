@@ -393,6 +393,7 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
                 } else {  // SELECTMODE_MINUTE
                     s_selected_minutes = -1;
                     update_selection_text();
+                    start_timeout();
                 }
             }
         } else {  // TOUCH_AREA_INNER
