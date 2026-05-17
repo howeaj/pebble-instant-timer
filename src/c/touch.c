@@ -91,12 +91,17 @@ static TextLayer* s_layer_central_text = NULL;
 static TextLayer* s_layer_explanation_text = NULL;
 static char s_central_text[MAX_TEXT_SIZE] = "hello";
 
+static AppTimer* s_animation_timer = NULL;
+
 #define FRAMERATE (30)
 #define MS_PER_FRAME (MS_PER_S / FRAMERATE)
 #define APPEAR_DURATION_MS (100)
 #define CIRCLE_PERCENT_GROWTH_RATE (100 / (APPEAR_DURATION_MS / MS_PER_FRAME))
 static int32_t s_circle_percent = 0;
-static AppTimer* s_animation_timer = NULL;
+
+#define WINDUP_HINT_DEGREES_PER_SEC (360 / FRAMERATE)
+static uint32_t s_windup_hint_angle = 0;
+
 
 static inline GColor color_outer_bg(void) {
     return config_get()->bgColor;
@@ -151,6 +156,39 @@ static void animate_circle(bool appear) {
         circle_grow(NULL);
     } else {
         circle_shrink(NULL);
+    }
+}
+
+static void animate_windup_hint(void* context) {
+    UNUSED(context);
+    cancel_animation_timer();
+    s_windup_hint_angle = (
+        (s_windup_hint_angle + DEG_TO_TRIGANGLE(WINDUP_HINT_DEGREES_PER_SEC))
+        % TRIG_MAX_ANGLE
+    );
+    layer_mark_dirty(s_layer);
+}
+
+// Draw a spinning arrow to hint the windup gesture
+static void draw_windup_hint(const GRect* bounds, const GPoint* centre, GContext *ctx) {
+    const GRect radial_bounds = grect_crop(*bounds, (PBL_DISPLAY_WIDTH / 2) - THRESHOLD_RADIUS + 10);
+
+    graphics_context_set_fill_color(ctx, color_inner_fg());
+    graphics_fill_radial(ctx, radial_bounds, GOvalScaleModeFitCircle, 1,
+                         s_windup_hint_angle - DEG_TO_TRIGANGLE(45),
+                         s_windup_hint_angle);
+
+    graphics_context_set_stroke_width(ctx, 1);
+    graphics_context_set_stroke_color(ctx, color_inner_fg());
+    const GPoint arrow_point = point_from_angle(*centre, s_windup_hint_angle, (radial_bounds.size.w / 2));
+    graphics_draw_line(ctx, arrow_point,
+        point_from_angle(arrow_point, s_windup_hint_angle - DEG_TO_TRIGANGLE(45), 10)
+    );
+    graphics_draw_line(ctx, arrow_point,
+        point_from_angle(arrow_point, s_windup_hint_angle - DEG_TO_TRIGANGLE(135), 10)
+    );
+    if (s_animation_timer == NULL) {
+        s_animation_timer = app_timer_register(FRAMERATE, animate_windup_hint, NULL);
     }
 }
 
@@ -246,6 +284,9 @@ static void draw_layer(Layer* layer, GContext* ctx) {
     if (is_circle_finished_growing()) {
         if (s_touch_area != TOUCH_AREA_NONE) {
             draw_selection_angle(&centre, ctx);
+        }
+        if (s_select_mode == SELECTMODE_MINUTE_WINDUP) {
+            draw_windup_hint(&bounds, &centre, ctx);
         }
         draw_clock_indices(&bounds, ctx);
     }
