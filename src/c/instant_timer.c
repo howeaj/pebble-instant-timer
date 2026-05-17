@@ -792,7 +792,9 @@ static void do_set(time_t duration) {
     stopwatch_resume();
     stopwatch_tick();
     update_alarm_duration();
-    update_remaining();
+
+    // Update elapsed for TouchTimerMode_Clear
+    update_elapsed();  // note this calls update_remaining()
 }
 #endif // PBL_TOUCH
 

@@ -2,7 +2,8 @@
 
 ## 2.3.1
 
-- Bugfix minutes input timeout after a touch below the minimum threshold
+- Bugfix minutes touch input timeout after a touch below the minimum threshold
+- Bugfix slow elapsed update for touch "clear elapsed" mode
 
 ## 2.3.0
 
