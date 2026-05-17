@@ -865,13 +865,13 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void update_tick_subscription(TimeUnits new_update_rate);
-static AppTimer* tick_reschedule_timer = NULL;
+static AppTimer* s_tick_reschedule_timer = NULL;
 
 // Timer callback which changes the rate of tick_handler t after its timer expires.
 // WARNING: `void* data`'s pointer value is directly interpreted as a TimeUnits, it isn't a pointer to a TimeUnits!
 static void update_rate_timer_callback(void* data) {
     TRACE("update_rate_timer_minutes_callback");
-    tick_reschedule_timer = NULL;
+    s_tick_reschedule_timer = NULL;
     update_tick_subscription((TimeUnits)data);
 }
 
@@ -880,22 +880,22 @@ static void update_rate_timer_callback(void* data) {
 static void schedule_tick_subscription_update(uint32_t timeout_ms, TimeUnits update_rate) {
     static TimeUnits scheduled_update_rate = 0;
     if (timeout_ms == 0) {
-        if (tick_reschedule_timer != NULL) {
-            app_timer_cancel(tick_reschedule_timer);
-            tick_reschedule_timer = NULL;
+        if (s_tick_reschedule_timer != NULL) {
+            app_timer_cancel(s_tick_reschedule_timer);
+            s_tick_reschedule_timer = NULL;
         }
     } else {
         LOG("Scheduled update rate -> %d in %ums", update_rate, timeout_ms);
-        if (tick_reschedule_timer == NULL) {
-            tick_reschedule_timer = app_timer_register(timeout_ms, update_rate_timer_callback, (void*)update_rate);
-            ASSERT(tick_reschedule_timer != NULL);
+        if (s_tick_reschedule_timer == NULL) {
+            s_tick_reschedule_timer = app_timer_register(timeout_ms, update_rate_timer_callback, (void*)update_rate);
+            ASSERT(s_tick_reschedule_timer != NULL);
         } else {
             if (scheduled_update_rate == update_rate) {
-                app_timer_reschedule(tick_reschedule_timer, timeout_ms);
+                app_timer_reschedule(s_tick_reschedule_timer, timeout_ms);
             } else {
-                app_timer_cancel(tick_reschedule_timer);
-                tick_reschedule_timer = app_timer_register(timeout_ms, update_rate_timer_callback, (void*)update_rate);
-                ASSERT(tick_reschedule_timer != NULL);
+                app_timer_cancel(s_tick_reschedule_timer);
+                s_tick_reschedule_timer = app_timer_register(timeout_ms, update_rate_timer_callback, (void*)update_rate);
+                ASSERT(s_tick_reschedule_timer != NULL);
             }
         }
     }
