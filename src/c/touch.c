@@ -38,6 +38,7 @@ static bool s_is_duration = false;
 static int8_t s_selected_hours = -1;
 static int8_t s_selected_minutes = -1;
 static uint32_t s_selected_angle = 0;
+static bool s_windup_on_inner_touch = false;
 
 typedef enum TouchArea {
     TOUCH_AREA_NONE = 0,
@@ -297,7 +298,34 @@ static uint8_t selected_segment(GPoint touch, uint8_t num_segments) {
     return MUL_FRACT(offset_angle_screenspace, num_segments, TRIG_MAX_ANGLE);
 }
 
+// Increment or decrement hours when 12o'clock is passed.
+// To avoid accidental windup, only enable windup on the inner touch area after passing 6o'clock.
+static void apply_windup(uint32_t prev_angle, uint32_t current_angle) {
+    if (s_select_mode == SELECTMODE_MINUTE_WINDUP) {
+        const bool crossed_12_clockwise = (
+            prev_angle > DEG_TO_TRIGANGLE(315)) && (current_angle < DEG_TO_TRIGANGLE(45));
+        const bool crossed_12_anticlockwise = (
+            current_angle > DEG_TO_TRIGANGLE(315)) && (prev_angle < DEG_TO_TRIGANGLE(45));
+        const bool crossed_6_clockwise = (
+            WITHIN_EXCL(prev_angle, DEG_TO_TRIGANGLE(135), DEG_TO_TRIGANGLE(180))
+            && WITHIN(current_angle, DEG_TO_TRIGANGLE(180), DEG_TO_TRIGANGLE(225))
+        );
+
+        if (crossed_12_clockwise) {
+            if ((s_touch_area == TOUCH_AREA_OUTER) || s_windup_on_inner_touch) {
+                s_selected_hours ++;
+            }
+        } else if (crossed_12_anticlockwise) {
+            s_selected_hours = MAX(0, s_selected_hours - 1);
+        } else if (crossed_6_clockwise) {
+            s_windup_on_inner_touch = true;
+        }
+    }
+}
+
 static void update_selection(GPoint touch) {
+    const uint32_t prev_angle = s_selected_angle;
+
     if (s_touch_area == TOUCH_AREA_OUTER) {
         if (s_select_mode == SELECTMODE_HOUR) {
             s_selected_hours = selected_segment(touch, 12);
@@ -307,7 +335,7 @@ static void update_selection(GPoint touch) {
         } else {
             s_selected_minutes = selected_segment(touch, 60);
         }
-    } else {  // no selection
+    } else {  // TOUCH_AREA_INNER; no selection
         (void)selected_segment(touch, 1);  // update s_selected_angle
         if (s_select_mode == SELECTMODE_HOUR) {
             s_selected_hours = -1;
@@ -315,6 +343,9 @@ static void update_selection(GPoint touch) {
             s_selected_minutes = -1;
         }
     }
+
+    apply_windup(prev_angle, s_selected_angle);
+
     update_selection_text();
 }
 
@@ -340,6 +371,7 @@ static void finish(void) {
     s_selected_hours = -1;
     s_selected_minutes = -1;
     s_touch_area = TOUCH_AREA_NONE;
+    s_windup_on_inner_touch = false;
     animate_circle(false);
 }
 
@@ -357,6 +389,7 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
 
     switch (event->type) {
     case TouchEvent_Touchdown:
+        s_selected_angle = 0;  // reset to avoid triggering windup
         register_touch_down();
         cancel_timeout();
         if (s_select_mode == SELECTMODE_NONE) {
@@ -368,6 +401,7 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
                 s_select_mode = SELECTMODE_HOUR;
             } else {
                 s_select_mode = SELECTMODE_MINUTE_WINDUP;
+                s_selected_hours = 0;
             }
             animate_circle(true);
             layer_set_hidden(s_layer, false);

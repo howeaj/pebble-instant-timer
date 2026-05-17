@@ -222,7 +222,7 @@
       {
         "type": "select",
         "messageKey": "touchTimerSetMethod",
-        "label": "Timer duration set method",
+        "label": "Duration set method",
         "defaultValue": "0",
         "group": "touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],

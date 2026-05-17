@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.4.0
+
+- Touch timer duration now set with a single touch; just select minutes and "wind up" (circle clockwise) to increase hours.
+- Config option to go back to original two-touch hours then minutes touch timer method.
+
 ## 2.3.1
 
 - Bugfix minutes touch input timeout after a touch below the minimum threshold

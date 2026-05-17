@@ -20,6 +20,8 @@
 #define SIGN(a) (((a) >= 0) ? 1 : -1)
 #define SQUARE(a) ((a) * (a))
 #define MUL_FRACT(val, numerator, denominator) (((val) * (numerator)) / (denominator))
+#define WITHIN(n, min, max)     ((n) >= (min) && (n) <= (max))
+#define WITHIN_EXCL(n, min, max) ((n) > (min) && (n) < (max))
 
 // Debugging
 #if DEBUG
