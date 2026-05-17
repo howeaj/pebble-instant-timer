@@ -28,8 +28,9 @@ static TouchServiceHandler s_parent_handler = NULL; // optional additional handl
 
 typedef enum SelectMode {
     SELECTMODE_NONE = 0,
-    SELECTMODE_HOUR,
-    SELECTMODE_MINUTE,
+    SELECTMODE_HOUR,  // The first touch of two
+    SELECTMODE_MINUTE,  // The second touch of two
+    SELECTMODE_MINUTE_WINDUP,  // The first touch of one
 } SelectMode;
 static SelectMode s_select_mode = SELECTMODE_NONE;
 
@@ -201,9 +202,9 @@ static void draw_clock_indices(const GRect* bounds, GContext *ctx) {
 
         const GPoint number_point = gpoint_from_polar(grect_crop(*bounds, 16), GOvalScaleModeFitCircle, angle);
         const char* text = (
-            (s_select_mode == SELECTMODE_MINUTE) ? mins_text[i]
-            : (s_is_duration && (i == 0)) ? "0"
-            : hours_text[i]
+            (s_is_duration && (i == 0)) ? "0"
+            : (s_select_mode == SELECTMODE_HOUR) ? hours_text[i]
+            : mins_text[i]
         );
         const GRect text_bounds = {
             .origin = {number_point.x - 9, number_point.y - 17},
@@ -363,7 +364,11 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
             if (config_get()->touchZoneAssignment == TouchZoneAssignment_Invert) {
                 s_is_duration = !s_is_duration;
             }
-            s_select_mode = SELECTMODE_HOUR;
+            if ((config_get()->touchTimerSetMethod == TouchTimerSetMethod_TwoTouch) || !s_is_duration) {
+                s_select_mode = SELECTMODE_HOUR;
+            } else {
+                s_select_mode = SELECTMODE_MINUTE_WINDUP;
+            }
             animate_circle(true);
             layer_set_hidden(s_layer, false);
         } else {
@@ -381,19 +386,19 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
                 if (s_select_mode == SELECTMODE_HOUR) {
                     start_timeout();
                     s_select_mode = SELECTMODE_MINUTE;
-                } else {  // SELECTMODE_MINUTE
+                } else {  // SELECTMODE_MINUTE(WINDUP)
                     LOG("Complete touch selection");
                     s_callback(s_is_duration, s_selected_hours, s_selected_minutes);
                     finish();
                 }
             } else {  // touch too short
                 LOG("Short touch ignored");
-                if (s_select_mode == SELECTMODE_HOUR) {
-                    finish();
-                } else {  // SELECTMODE_MINUTE
+                if (s_select_mode == SELECTMODE_MINUTE) {  // second touch
                     s_selected_minutes = -1;
                     update_selection_text();
                     start_timeout();
+                } else {  // first touch
+                    finish();
                 }
             }
         } else {  // TOUCH_AREA_INNER
