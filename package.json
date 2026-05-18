@@ -1,7 +1,7 @@
 {
   "name": "Instant Timer",
   "author": "howeaj",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "keywords": [
     "pebble-app"
   ],
@@ -44,7 +44,8 @@
       "touchZoneAssignment",
       "touchTimerMode",
       "alarmVibePattern",
-      "touchTimerSetMethod"
+      "touchTimerSetMethod",
+      "touchDisableWhileInactive"
     ],
     "resources": {
       "media": [

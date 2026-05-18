@@ -42,6 +42,7 @@
     MACRO(ENUM,  TouchTimerEffect,    touchTimerMode,               TouchTimerEffect_Duration) \
     MACRO(ENUM,  AlarmVibePattern,    alarmVibePattern,             AlarmVibePattern_Double) \
     MACRO(ENUM,  TouchTimerSetMethod, touchTimerSetMethod,          TouchTimerSetMethod_MinuteWindup) \
+    MACRO(BOOL,  bool,                touchDisableWhileInactive,    false) \
 /* end of X_CONFIG_OPTIONS */
 
 

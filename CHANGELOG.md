@@ -3,7 +3,8 @@
 ## 2.4.0
 
 - Touch timer duration now set with a single touch; just select minutes and "wind up" (circle clockwise) to increase hours.
-- Config option to go back to original two-touch hours then minutes touch timer method.
+- Config option to go back to the two-touch hours-then-minutes method.
+- Config option to turn off the touch screen while inactive; turns on for 3s after a button press or accel shake/tap, like the system backlight
 
 ## 2.3.1
 

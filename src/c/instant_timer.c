@@ -1,13 +1,11 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
-    - Config only enable touch when already active (i.e. backlight already on)
     - Minimum finger off time for second touch to register
     - Config down-from-zero wrap values
     - Config battery saving timeouts / thresholds / services
     - Long press on rightmost X to save & exit, if its faster than back-long-press?
         - and config option to always exit all the way to watchface
-    - touch windup gesture to increase values
     - some kind of tutorial or help mode?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
     - insert timeline pin
@@ -37,7 +35,6 @@
 
 
 #define LONG_CLICK_DURATION (500)  // duration for long click events
-#define DEFAULT_BACKLIGHT_TIMEOUT_MS (3000)  // The system timeout for the backlight after activity, from prefs.h
 #define LIGHT_FADE_TIME_MS (500)  // The system duration for backlight fade, from light.c
 
 
@@ -996,8 +993,9 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
 }
 
 #if PBL_TOUCH
-// handle new touch selection
-static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
+
+// handle new touch time selection
+static void handle_touch_selection(bool is_duration, uint8_t hours, uint8_t minutes) {
     stopwatch_tick(); // make sure elapsed_time is up-to-date
 
     time_t duration;
@@ -1050,13 +1048,25 @@ static void touch_callback(bool is_duration, uint8_t hours, uint8_t minutes) {
 static void handle_touch_event(const TouchEvent *event, void *context) {
     update_tick_subscription(SECOND_UNIT);
 }
-#endif // PBL_TOUCH
+
+static void enable_touch(void) {
+    touch_enable(config_get()->enableTouch);
+}
+
+#else // !PBL_TOUCH
+
+static void enable_touch(void) {
+    // nothing
+}
+
+#endif  // !PBL_TOUCH
 
 static void battery_state_handler(BatteryChargeState charge) {
     TRACE("battery_state_handler");
     static bool was_plugged = false;
     if (charge.is_plugged != was_plugged) {
         update_tick_subscription(SECOND_UNIT);
+        // note: deliberately not enabling touch for this event
         was_plugged = charge.is_plugged;
     }
 }
@@ -1064,6 +1074,7 @@ static void battery_state_handler(BatteryChargeState charge) {
 static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
     TRACE("accel_tap_handler");
     update_tick_subscription(SECOND_UNIT);
+    enable_touch();
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -1089,6 +1100,7 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
         }
     }
     update_tick_subscription(SECOND_UNIT);
+    enable_touch();
 }
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -1101,6 +1113,7 @@ static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
         }
     }
     update_tick_subscription(SECOND_UNIT);
+    enable_touch();
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -1117,6 +1130,7 @@ static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
         update_action_bar();
     }
     update_tick_subscription(SECOND_UNIT);
+    enable_touch();
 }
 
 static void select_long_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -1128,6 +1142,7 @@ static void select_long_click_handler(ClickRecognizerRef recognizer, void *conte
         update_action_bar();
     }
     update_tick_subscription(SECOND_UNIT);
+    enable_touch();
 }
 
 static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -1142,6 +1157,7 @@ static void back_click_handler(ClickRecognizerRef recognizer, void *context) {
         }
     }
     update_tick_subscription(SECOND_UNIT);
+    enable_touch();
 }
 
 static void click_config_provider(void *context) {
@@ -1496,7 +1512,7 @@ static void main_window_load(Window *window) {
 
     // touch selector
 #if PBL_TOUCH
-    touch_create(window_layer, &touch_callback, &handle_touch_event);
+    touch_create(window_layer, &handle_touch_selection, &handle_touch_event);
 #endif // PBL_TOUCH
 
     // exit screen

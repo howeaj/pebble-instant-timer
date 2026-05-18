@@ -7,6 +7,10 @@
 
 #define MAX_TIME_TEXT_SIZE (50)
 
+// The system timeout for the backlight after activity, from prefs.h
+// Note this can be changed by the user in system settings
+#define DEFAULT_BACKLIGHT_TIMEOUT_MS (3000)
+
 
 uint32_t timestamp_ms(void);
 void graphics_color_circle(GContext* ctx, GPoint p, uint16_t radius, GColor color);

@@ -34,6 +34,7 @@ typedef enum SelectMode {
 } SelectMode;
 static SelectMode s_select_mode = SELECTMODE_NONE;
 
+static bool s_touch_is_enabled = false;
 static bool s_is_duration = false;
 static int8_t s_selected_hours = -1;
 static int8_t s_selected_minutes = -1;
@@ -425,6 +426,7 @@ static void handle_timeout(void* data) {
 
 static void handle_touch_event(const TouchEvent *event, void *context) {
     UNUSED(context);
+    touch_enable(true);  // reset any disable timer
     const GPoint touch = (GPoint){event->x, event->y};
     s_touch_area = is_touch_in_outer_ring(touch) ? TOUCH_AREA_OUTER : TOUCH_AREA_INNER;
 
@@ -494,6 +496,24 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
     }
 }
 
+// Timer for config_get()->touchDisableWhileInactive
+static AppTimer* s_touch_disable_timer = NULL;
+static void timeout_enable_callback(void* context) {
+    UNUSED(context);
+    s_touch_disable_timer = NULL;
+    touch_enable(false);
+}
+static void schedule_touch_disable(void) {
+    const uint32_t timeout_ms = DEFAULT_BACKLIGHT_TIMEOUT_MS;
+    if (s_touch_disable_timer == NULL) {
+        s_touch_disable_timer = app_timer_register(timeout_ms, timeout_enable_callback, NULL);
+        ASSERT(s_touch_disable_timer != NULL);
+    } else {
+        const bool success = app_timer_reschedule(s_touch_disable_timer, timeout_ms);
+        ASSERT(success);
+    }
+}
+
 
 /******************************************************************************
  Public funcs
@@ -504,18 +524,24 @@ bool touch_in_progress(void) {
     return s_select_mode != SELECTMODE_NONE;
 }
 
-// Enable or disable the touchscreen
-// TODO maybe have the main window disable this on a timer, and re-enable on shake (i.e. same as backlight)
-// although I think the system automatically puts it in a low-power mode after 2s anyway
+// Enable or disable this module's touchscreen handler
 void touch_enable(bool enable) {
-    ASSERT(s_layer != NULL);  // can happen if you submit app config while touching
+    ASSERT(s_layer != NULL);
     if (touch_service_is_enabled() && (s_layer != NULL)) {
-        ASSERT(!touch_in_progress());  // can happen if you submit app config while touching
         if (enable) {
-            touch_service_subscribe(handle_touch_event, NULL);
+            if (!s_touch_is_enabled) {
+                touch_service_subscribe(handle_touch_event, NULL);
+                s_touch_is_enabled = true;
+                    LOG("touch ON");
+            }
+            if (config_get()->touchDisableWhileInactive) {
+                schedule_touch_disable();
+            }
         } else {
             finish();
             touch_service_unsubscribe();
+            s_touch_is_enabled = false;
+            LOG("touch OFF");
         }
     }
 }
