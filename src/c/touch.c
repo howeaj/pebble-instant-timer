@@ -162,7 +162,7 @@ static void animate_circle(bool appear) {
 
 static void animate_windup_hint(void* context) {
     UNUSED(context);
-    cancel_animation_timer();
+    s_animation_timer = NULL;
     s_windup_hint_angle = (
         (s_windup_hint_angle + DEG_TO_TRIGANGLE(WINDUP_HINT_DEGREES_PER_SEC))
         % TRIG_MAX_ANGLE
@@ -298,24 +298,25 @@ static void draw_layer(Layer* layer, GContext* ctx) {
  Logic
 ******************************************************************************/
 
-static time_t s_down_time_s = 0;  // the time of the latest TouchEvent_Touchdown
-static uint16_t s_down_time_ms = 0;  // ms since s_down_time_s of the latest TouchEvent_Touchdown
+// state tracking for debouncing
+static time_t s_edge_time_s = 0;  // the time of the latest TouchEvent_Touchdown/Liftoff
+static uint16_t s_edge_time_ms = 0;  // ms since s_edge_time_s of the latest TouchEvent_Touchdown/Liftoff
 
-static inline void register_touch_down(void) {
-    (void)time_ms(&s_down_time_s, &s_down_time_ms);
+static inline void register_touch_edge(void) {
+    (void)time_ms(&s_edge_time_s, &s_edge_time_ms);
 }
 
-static inline bool is_touch_long_enough(void) {
+static inline bool is_touch_state_long_enough(int32_t minDurationMs) {
     time_t now_s = 0;
     uint16_t now_ms = 0;
     (void)time_ms(&now_s, &now_ms);
 
     const int32_t duration_ms = (
-        ((now_s - s_down_time_s) * MS_PER_S)
-        + ((int32_t)now_ms - (int32_t)s_down_time_ms)
+        ((now_s - s_edge_time_s) * MS_PER_S)
+        + ((int32_t)now_ms - (int32_t)s_edge_time_ms)
     );
-    LOG("touch duration: %d:%u - %d:%u = %d", s_down_time_s, s_down_time_ms, now_s, now_ms, duration_ms);
-    return duration_ms >= config_get()->touchMinDurationMs;
+    LOG("touch state duration: %d:%u - %d:%u = %d", s_edge_time_s, s_edge_time_ms, now_s, now_ms, duration_ms);
+    return duration_ms >= minDurationMs;
 }
 
 static bool is_touch_in_outer_ring(GPoint touch) {
@@ -433,7 +434,6 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
     switch (event->type) {
     case TouchEvent_Touchdown:
         s_selected_angle = 0;  // reset to avoid triggering windup
-        register_touch_down();
         cancel_timeout();
         if (s_select_mode == SELECTMODE_NONE) {
             s_is_duration = (s_touch_area == TOUCH_AREA_INNER);
@@ -450,15 +450,19 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
             layer_set_hidden(s_layer, false);
         } else {
             ASSERT(s_select_mode == SELECTMODE_MINUTE);
+            if (!is_touch_state_long_enough(config_get()->touchLiftMinDurationMs)) {  // liftoff too short
+                s_select_mode = SELECTMODE_HOUR;
+            }
         }
         update_selection(touch);
+        register_touch_edge();
         break;
     case TouchEvent_PositionUpdate:
         update_selection(touch);
         break;
     case TouchEvent_Liftoff:
         if (s_touch_area == TOUCH_AREA_OUTER) {
-            if (is_touch_long_enough()) {
+            if (is_touch_state_long_enough(config_get()->touchMinDurationMs)) {
                 update_selection(touch);
                 if (s_select_mode == SELECTMODE_HOUR) {
                     start_timeout();
@@ -483,6 +487,7 @@ static void handle_touch_event(const TouchEvent *event, void *context) {
             finish();
         }
         s_touch_area = TOUCH_AREA_NONE;
+        register_touch_edge();
         break;
     default:
         ASSERT(false);

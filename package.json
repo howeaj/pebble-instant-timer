@@ -45,7 +45,8 @@
       "touchTimerMode",
       "alarmVibePattern",
       "touchTimerSetMethod",
-      "touchDisableWhileInactive"
+      "touchDisableWhileInactive",
+      "touchLiftMinDurationMs"
     ],
     "resources": {
       "media": [

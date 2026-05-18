@@ -291,6 +291,18 @@
         "step": 50,
         "group": "touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+      },
+      {
+        "type": "slider",
+        "messageKey": "touchLiftMinDurationMs",
+        "label": "Minimum lift duration (milliseconds)",
+        "description": "Lifts shorter than this are ignored when setting hours",
+        "defaultValue": 150,
+        "min": 0,
+        "max": 1000,
+        "step": 50,
+        "group": "touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
       }
     ]
   },
