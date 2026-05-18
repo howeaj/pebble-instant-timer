@@ -1,21 +1,22 @@
-Stopwatch / Alarm / Timer combo designed for quick launch. Everyday cooking, reminders and alarms. Touch controls; set with two swipes! Packed with unique, detailed behaviour to optimise easy frequent use.
+Stopwatch / Alarm / Timer combo designed for quick launch; everyday cooking, reminders and alarms. Touch controls; set with one swipe! Packed with unique, detailed behaviour to optimise easy frequent use.
 
-!NEW! Touch controls (PT2/PR2): Set a timer or alarm with just two swipes!
-    - Touch, hold and drag to select hours then minutes
+Optional touch controls (PT2/PR2): Set with just one or two swipes!
+    - Timer: touch, hold and drag to select minutes; circle clockwise to wind-up hours
+    - Alarm: touch, hold and drag to select hours, then minutes
     - Start touching from the middle to set a timer duration, or from the edge to set an alarm time
     - To cancel, finish touching in the middle or don't select any minutes
 
-Specifically, this does 3 things I couldn't find anywhere else:
+This app does 3 things I couldn't find anywhere else:
     - Start counting immediately on launch
     - Show all 4 relevant values (alarm time, duration, remaining, elapsed) at all times
     - Modify the duration at any point without any pause or confirmation
 
 Other features:
     - Timer modification controls optimised for speed (1h, 5m, 1m increments)
-    - Configuration options:
-        - Colours / themes
-        - Vibes
-        - Touch enable/disable and timeout
+    - Configuration:
+        - Full colour customisation & Themes
+        - Vibe patterns
+        - Various touch options
     - Battery saving:
         - Auto switch between seconds/minutes update rate, synced with backlight and/or remaining time
         - Zero background power use
@@ -28,7 +29,7 @@ Other features:
     - Pause, resume, restart, reset
     - Round and rect, black, white and colour pebbles
 
-Controls:
+Button controls:
     - Select/Back to choose modification digits (15/30 seconds available while under 2/5mins)
     - Up/Down to increment/decrement. Hold to repeat. Down at 0 wraps up.
     - Select Long-press (or Press at lowest digit)
