@@ -43,7 +43,7 @@
     MACRO(ENUM,  AlarmVibePattern,    alarmVibePattern,             AlarmVibePattern_Double) \
     MACRO(ENUM,  TouchTimerSetMethod, touchTimerSetMethod,          TouchTimerSetMethod_MinuteWindup) \
     MACRO(BOOL,  bool,                touchDisableWhileInactive,    false) \
-    MACRO(INT,   int32_t,             touchLiftMinDurationMs,       150) /*minimum duration for lifts to register setting hours*/\
+    MACRO(INT,   int32_t,             touchLiftMinDurationMs,       100) /*minimum duration for lifts to register setting hours*/\
 /* end of X_CONFIG_OPTIONS */
 
 
