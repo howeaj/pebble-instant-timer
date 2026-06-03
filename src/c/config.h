@@ -19,6 +19,8 @@ typedef struct Config {
 
 #pragma pack(pop)
 
+STATIC_ASSERT(sizeof(Config) <= PERSIST_DATA_MAX_LENGTH);
+
 
 typedef void (*NewConfigCallback)(const Config* config);
 
