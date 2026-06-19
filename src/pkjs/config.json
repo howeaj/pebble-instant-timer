@@ -1,222 +1,118 @@
 [
-  {
-    "type": "heading",
-    "defaultValue": "Instant Timer config"
-  },
-  {
-    "type": "section",
+  { "type": "heading", "defaultValue": "Instant Timer config" },
+  { "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Vibes"
-      },
-      {
-        "type": "select",
-        "messageKey": "alarmVibePattern",
-        "label": "Alarm vibe pattern",
+      { "type": "heading", "defaultValue": "Vibes" },
+      { "type": "select", "messageKey": "alarmVibePattern", "label": "Alarm vibe pattern",
         "defaultValue": "0",
         "options": [
-          {
-            "label": "Double",
-            "value": "0"
-          },
-          {
-            "label": "Short",
-            "value": "1"
-          },
-          {
-            "label": "Long",
-            "value": "2"
-          }
+          {"label": "Double", "value": "0" },
+          {"label": "Short", "value": "1" },
+          {"label": "Long", "value": "2" }
         ]
       }
     ]
   },
-  {
-    "type": "section",
+  { "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Colours"
-      },
-      {
-        "type": "select",
-        "messageKey": "theme",
-        "label": "Theme",
-        "defaultValue": "Dark",
+      { "type": "heading", "defaultValue": "Colours" },
+      { "type": "select", "messageKey": "theme", "label": "Theme",
         "capabilities": ["COLOR"],
-        "options": [
-          {
-            "label": "Dark",
-            "value": "Dark"
-          },
-          {
-            "label": "Light",
-            "value": "Light"
-          },
-          {
-            "label": "Green",
-            "value": "Green"
-          },
-          {
-            "label": "Aqua",
-            "value": "Aqua"
-          },
-          {
-            "label": "Custom",
-            "value": "Custom"
-          }
-        ]
-      },
-      {
-        "type": "select",
-        "messageKey": "theme",
-        "label": "Theme",
         "defaultValue": "Dark",
-        "capabilities": ["NOT_COLOR"],
         "options": [
-          {
-            "label": "Dark",
-            "value": "Dark"
-          },
-          {
-            "label": "Light",
-            "value": "Light"
-          },
-          {
-            "label": "Custom",
-            "value": "Custom"
-          }
+          {"label": "Dark", "value": "Dark" },
+          {"label": "Light", "value": "Light" },
+          {"label": "Green", "value": "Green" },
+          {"label": "Aqua", "value": "Aqua" },
+          {"label": "Custom", "value": "Custom" }
         ]
       },
-      {
-        "type": "color",
-        "messageKey": "bgColor",
-        "label": "Background - Main panel",
+      { "type": "select", "messageKey": "theme", "label": "Theme",
+        "capabilities": ["NOT_COLOR"],
+        "defaultValue": "Dark",
+        "options": [
+          {"label": "Dark", "value": "Dark" },
+          {"label": "Light", "value": "Light" },
+          {"label": "Custom", "value": "Custom" }
+        ]
+      },
+      { "type": "color", "messageKey": "bgColor", "label": "Background - Main panel",
         "defaultValue": "000000"
       },
-      {
-        "type": "color",
-        "messageKey": "actionBarBgColor",
-        "label": "Background - Action bar",
+      { "type": "color", "messageKey": "actionBarBgColor", "label": "Background - Action bar",
         "defaultValue": "000000",
         "capabilities": ["RECT"]
       },
-      {
-        "type": "color",
-        "messageKey": "statusBarBgColor",
-        "label": "Background - Status bar",
+      { "type": "color", "messageKey": "statusBarBgColor", "label": "Background - Status bar",
         "defaultValue": "000000"
       },
-      {
-        "type": "color",
-        "messageKey": "textColor",
-        "label": "Foreground - Main panel",
+      { "type": "color", "messageKey": "textColor", "label": "Foreground - Main panel",
         "defaultValue": "ffffff"
       },
-      {
-        "type": "color",
-        "messageKey": "actionBarIconColor",
-        "label": "Foreground - Action bar",
+      { "type": "color", "messageKey": "actionBarIconColor", "label": "Foreground - Action bar",
         "defaultValue": "ffffff"
       },
-      {
-        "type": "color",
-        "messageKey": "statusBarTextColor",
-        "label": "Foreground - Status bar",
+      { "type": "color", "messageKey": "statusBarTextColor", "label": "Foreground - Status bar",
         "defaultValue": "ffffff"
       },
-      {
-        "type": "color",
-        "messageKey": "ringColorEmpty",
+      { "type": "color", "messageKey": "ringColorEmpty", "label": "Progress ring - Empty",
         "id": "col_ringColorEmpty",
-        "label": "Progress ring - Empty",
         "defaultValue": "555555",
         "capabilities": ["COLOR"]
       },
-      {
-        "type": "color",
-        "messageKey": "ringColorRemaining",
+      { "type": "color", "messageKey": "ringColorRemaining", "label": "Progress ring - Remaining",
         "id": "col_ringColorRemaining",
-        "label": "Progress ring - Remaining",
         "defaultValue": "00ff00",
         "capabilities": ["COLOR"]
       },
-      {
-        "type": "color",
-        "messageKey": "ringColorOvertime",
+      { "type": "color", "messageKey": "ringColorOvertime", "label": "Progress ring - Overtime",
         "id": "col_ringColorOvertime",
-        "label": "Progress ring - Overtime",
         "defaultValue": "ff0000",
         "capabilities": ["COLOR"]
       },
-      {
-        "type": "color",
-        "messageKey": "ringColorEmpty",
+      { "type": "color", "messageKey": "ringColorEmpty", "label": "Progress ring - Empty",
         "id": "bw_ringColorEmpty",
-        "label": "Progress ring - Empty",
         "defaultValue": "555555",
         "capabilities": ["NOT_COLOR"],
         "allowGray": true
       },
-      {
-        "type": "color",
-        "messageKey": "ringColorRemaining",
+      { "type": "color", "messageKey": "ringColorRemaining", "label": "Progress ring - Remaining",
         "id": "bw_ringColorRemaining",
-        "label": "Progress ring - Remaining",
         "defaultValue": "ffffff",
         "capabilities": ["NOT_COLOR"],
         "allowGray": true
       },
-      {
-        "type": "color",
-        "messageKey": "ringColorOvertime",
+      { "type": "color", "messageKey": "ringColorOvertime", "label": "Progress ring - Overtime",
         "id": "bw_ringColorOvertime",
-        "label": "Progress ring - Overtime",
         "defaultValue": "ffffff",
         "capabilities": ["NOT_COLOR"],
         "allowGray": true
       },
-      {
-        "type": "color",
-        "messageKey": "bgColorImage",
-        "label": "Underlay - Pause/Bell",
+      { "type": "color", "messageKey": "bgColorImage", "label": "Underlay - Pause/Bell",
         "defaultValue": "550000",
         "capabilities": ["COLOR"]
       }
     ]
   },
-  {
-    "type": "section",
+  { "type": "section",
     "items": [
-      {
-        "type": "heading",
-        "defaultValue": "Touch",
+      { "type": "heading", "defaultValue": "Touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
       },
-      {
-        "type": "toggle",
-        "messageKey": "enableTouch",
-        "label": "Enable",
-        "defaultValue": true,
-        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
-      },
-      {
-        "type": "toggle",
-        "messageKey": "touchDisableWhileInactive",
-        "label": "Turn off touchscreen while inactive",
-        "description": "Only turn on the touchscreen for 3s after a button press or accel tap/shake (i.e. when backlight is on / seconds shown)",
-        "defaultValue": false,
-        "group": "touch",
-        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
-      },
-      {
-        "type": "select",
-        "messageKey": "touchZoneAssignment",
-        "label": "Touch zones",
-        "defaultValue": "0",
-        "group": "touch",
+      { "type": "toggle", "messageKey": "enableTouch", "label": "Enable",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "defaultValue": true
+      },
+      { "type": "toggle", "messageKey": "touchDisableWhileInactive", "label": "Turn off touchscreen while inactive",
+        "description": "Only turn on the touchscreen for 3s after a button press or accel tap/shake (i.e. when backlight is on / seconds shown)",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "group": "touch",
+        "defaultValue": false
+      },
+      { "type": "select", "messageKey": "touchZoneAssignment", "label": "Touch zones",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "group": "touch",
+        "defaultValue": "0",
         "options": [
           {
             "label": "Inner=Duration, Outer=Alarm Time",
@@ -228,13 +124,10 @@
           }
         ]
       },
-      {
-        "type": "select",
-        "messageKey": "touchTimerSetMethod",
-        "label": "Duration set method",
-        "defaultValue": "0",
-        "group": "touch",
+      { "type": "select", "messageKey": "touchTimerSetMethod", "label": "Duration set method",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "group": "touch",
+        "defaultValue": "0",
         "options": [
           {
             "label": "Single touch; wind up for hours",
@@ -246,68 +139,46 @@
           }
         ]
       },
-      {
-        "type": "select",
-        "messageKey": "touchTimerMode",
-        "label": "Affected values",
-        "defaultValue": "1",
-        "group": "touch",
+      { "type": "select", "messageKey": "touchTimerMode", "label": "Affected values",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "group": "touch",
+        "defaultValue": "1",
         "options": [
-          {
-            "label": "Set Duration, Clear Elapsed",
-            "value": "0"
-          },
-          {
-            "label": "Set Duration, Keep Elapsed",
-            "value": "1"
-          },
-          {
-            "label": "Set Remaining, Keep Elapsed",
-            "value": "2"
-          }
+          {"label": "Set Duration, Clear Elapsed", "value": "0" },
+          {"label": "Set Duration, Keep Elapsed",  "value": "1" },
+          {"label": "Set Remaining, Keep Elapsed", "value": "2" }
         ]
       },
-      {
-        "type": "slider",
-        "messageKey": "touchInputTimeoutDeciseconds",
-        "label": "Input timeout (seconds)",
+      { "type": "slider", "messageKey": "touchInputTimeoutDeciseconds", "label": "Input timeout (seconds)",
         "description": "Cancel after this long without a touch",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "group": "touch",
         "defaultValue": 2.0,
         "min": 0.5,
         "max": 5.0,
-        "step": 0.5,
-        "group": "touch",
-        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+        "step": 0.5
       },
-      {
-        "type": "slider",
-        "messageKey": "touchMinDurationMs",
-        "label": "Minimum touch duration (milliseconds)",
+      { "type": "slider", "messageKey": "touchMinDurationMs", "label": "Minimum touch duration (milliseconds)",
         "description": "Touches shorter than this are ignored",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "group": "touch",
         "defaultValue": 150,
         "min": 0,
         "max": 1000,
-        "step": 50,
-        "group": "touch",
-        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+        "step": 50
       },
-      {
-        "type": "slider",
-        "messageKey": "touchLiftMinDurationMs",
-        "label": "Minimum lift duration (milliseconds)",
+      { "type": "slider", "messageKey": "touchLiftMinDurationMs", "label": "Minimum lift duration (milliseconds)",
         "description": "Lifts shorter than this are ignored when setting hours",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
+        "group": "touch",
         "defaultValue": 100,
         "min": 0,
         "max": 1000,
-        "step": 50,
-        "group": "touch",
-        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
+        "step": 50
       }
     ]
   },
-  {
-    "type": "submit",
+  { "type": "submit",
     "defaultValue": "Save"
   }
 ]
