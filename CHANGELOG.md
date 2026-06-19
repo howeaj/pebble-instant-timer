@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.5.0
+
+- Touch timer seconds precision; enable by "winding down" anticlockwise from 0.
+
 ## 2.4.0
 
 - Touch timer duration now set with a single touch; just select minutes and "wind up" (circle clockwise) to increase hours.

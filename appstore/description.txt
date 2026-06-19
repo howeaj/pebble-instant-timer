@@ -1,7 +1,7 @@
 Stopwatch / Alarm / Timer combo designed for quick launch; everyday cooking, reminders and alarms. Touch controls; set with one swipe! Packed with unique, detailed behaviour to optimise easy frequent use.
 
 Optional touch controls (PT2/PR2): Set with just one or two swipes!
-    - Timer: touch, hold and drag to select minutes; circle clockwise to wind-up hours
+    - Timer: touch, hold and drag to select minutes; circle clockwise to wind-up hours, or anticlockwise for seconds
     - Alarm: touch, hold and drag to select hours, then minutes
     - Start touching from the middle to set a timer duration, or from the edge to set an alarm time
     - To cancel, finish touching in the middle or don't select any minutes

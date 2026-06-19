@@ -1,7 +1,8 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
-    - Minimum finger off time for second touch to register
+    - Fix show-seconds-on-backlight not activating on touch
+    - Enable touch on... touch?
     - Config down-from-zero wrap values
     - Config battery saving timeouts / thresholds / services
     - Long press on rightmost X to save & exit, if its faster than back-long-press?
@@ -995,18 +996,19 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
 #if PBL_TOUCH
 
 // handle new touch time selection
-static void handle_touch_selection(bool is_duration, uint8_t hours, uint8_t minutes) {
+static void handle_touch_selection(bool is_duration, uint8_t hours, uint8_t minutes, uint8_t seconds) {
     stopwatch_tick(); // make sure elapsed_time is up-to-date
 
     time_t duration;
     if (is_duration) {
-        duration = (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE);
+        duration = (hours * SECONDS_PER_HOUR) + (minutes * SECONDS_PER_MINUTE) + seconds;
     } else {
         const time_t now = time(NULL);
         struct tm* target_time_tomorrow_struct = localtime(&now);
         target_time_tomorrow_struct->tm_mday += 1;
         target_time_tomorrow_struct->tm_hour = hours;
         target_time_tomorrow_struct->tm_min = minutes;
+        ASSERT(seconds == 0);
         target_time_tomorrow_struct->tm_sec = 0;
         const time_t target_time_tomorrow = mktime(target_time_tomorrow_struct);
         duration = (target_time_tomorrow - now) % (12 * SECONDS_PER_HOUR);

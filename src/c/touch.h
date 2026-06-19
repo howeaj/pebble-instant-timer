@@ -7,7 +7,7 @@
 #if PBL_TOUCH
 
 
-typedef void (*TouchSelectionCallback)(bool is_duration, uint8_t hours, uint8_t minutes);
+typedef void (*TouchSelectionCallback)(bool is_duration, uint8_t hours, uint8_t minutes, uint8_t seconds);
 
 void touch_create(Layer* parent, TouchSelectionCallback callback, TouchServiceHandler handler);
 void touch_destroy(void);
