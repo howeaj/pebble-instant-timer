@@ -32,10 +32,8 @@ Other features:
 Button controls:
     - Select/Back to choose modification digits (15/30 seconds available while under 2/5mins)
     - Up/Down to increment/decrement. Hold to repeat. Down at 0 wraps up.
-    - Select Long-press (or Press at lowest digit)
-         to toggle pause/resume and enter "control mode":
-        - Up (rewind icon) to restart the timer (i.e. set elapsed time to 0)
-             while retaining the timer/alarm duration
+    - Select Long-press (or Press at lowest digit) to toggle pause/resume and enter "control mode":
+        - Up (rewind icon) to restart the timer (i.e. set elapsed time to 0) while retaining the timer/alarm duration
         - Up Long-press to reset the entire app to 0
         - Select (play/pause icon) to pause/resume counting
         - Down (X icon) to discard timer/alarm and exit the app
@@ -45,11 +43,10 @@ Button controls:
         - Down (X icon) to discard timer/alarm and exit the app
         - Select (> icon) to return to timer modification
     - Back Long-press to save and exit
-    - Any button to dismiss alarm bell
+    - Select (✓ icon) or Back to dismiss alarm bell.
 
 This app is great if you want to:
-    - Set a generic egg timer running fast without looking in the middle of cooking,
-         and then change it as you go along
+    - Set a generic egg timer running fast without looking in the middle of cooking, and then change it as you go along
     - Often quickly set an alarm clock to remind you about something in the near future
     - Set a wakeup alarm quick at a varying time just before you go to sleep
     - Do all of the above with a single app using one quick-launch slot

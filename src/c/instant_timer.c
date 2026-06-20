@@ -79,9 +79,7 @@ static GBitmap* s_icon_start;
 static GBitmap* s_icon_delete;
 static GBitmap* s_icon_refresh;
 static GBitmap* s_icon_save;
-#if PBL_RECT
-    static GBitmap* s_icon_tick;
-#endif // PBL_RECT
+static GBitmap* s_icon_tick;
 
 // exit screen
 static BitmapLayer* s_exit_layer;
@@ -541,20 +539,16 @@ static void update_action_bar(void) {
 static void toggle_action_bar(bool visible) {
     static bool was_visible = true;
     if (visible != was_visible){
-#if PBL_ROUND
-        layer_set_hidden((Layer*)s_action_bar, !visible);
-#else // PBL_RECT
         if (visible) {
             update_action_bar();
         } else {
-            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_tick, true);
+            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_refresh, true);
             action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, s_icon_tick, true);
-            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_tick, true);
+            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_delete, true);
             action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
             action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveLeft);
             action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
         }
-#endif // PBL_RECT
         was_visible = visible;
     }
 }
@@ -1082,7 +1076,9 @@ static void accel_tap_handler(AccelAxisType axis, int32_t direction) {
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("up_click_handler");
     static bool prevent_increment_until_release = false;
-    if (!do_alarm_clear()) {
+    if (do_alarm_clear()) {
+        do_restart();
+    } else {
         if (s_mode == MODE_CTRL) {
             if (click_recognizer_is_repeating(recognizer)) {
                 prevent_increment_until_release = true;
@@ -1107,12 +1103,10 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("down_click_handler");
-    if (!do_alarm_clear()) {
-        if ((s_mode == MODE_CTRL) || (s_mode == MODE_EXIT)) {
-            do_exit(false);
-        } else {
-            do_increment(false, recognizer);
-        }
+    if (do_alarm_clear() || (s_mode == MODE_CTRL) || (s_mode == MODE_EXIT)) {
+        do_exit(false);
+    } else {
+        do_increment(false, recognizer);
     }
     update_tick_subscription(SECOND_UNIT);
     enable_touch();
@@ -1311,9 +1305,7 @@ static void set_bitmap_colors(const Config* config) {
     gbitmap_set_color(s_icon_right,   color_index, action_icon_color);
     gbitmap_set_color(s_icon_up,      color_index, action_icon_color);
     gbitmap_set_color(s_icon_down,    color_index, action_icon_color);
-#if PBL_RECT
     gbitmap_set_color(s_icon_tick,    color_index, action_icon_color);
-#endif // PBL_RECT
 
     // status
     const GColor text_color = config->textColor;
@@ -1504,9 +1496,7 @@ static void main_window_load(Window *window) {
     s_icon_pause = gbitmap_create_with_resource(RESOURCE_ID_ICON_PAUSE);
     s_icon_delete = gbitmap_create_with_resource(RESOURCE_ID_ICON_DELETE);
     s_icon_save = gbitmap_create_with_resource(RESOURCE_ID_ICON_SAVE);
-#if PBL_RECT
     s_icon_tick = gbitmap_create_with_resource(RESOURCE_ID_ICON_TICK);
-#endif // PBL_RECT
 
     // status bar
     s_status_bar = status_bar_layer_create();
@@ -1583,9 +1573,7 @@ static void main_window_unload(Window *window) {
     gbitmap_destroy(s_icon_pause);
     gbitmap_destroy(s_icon_delete);
     gbitmap_destroy(s_icon_save);
-#if PBL_RECT
     gbitmap_destroy(s_icon_tick);
-#endif // PBL_RECT
 
     // status bar
     status_bar_layer_destroy(s_status_bar);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.0
+
+- Pressing Up or Down while the alarm is ringing now Restarts or Delete&Exits the app, rather than just clearing the alarm.
+
 ## 2.5.0
 
 - Touch timer seconds precision; enable by "winding down" anticlockwise from 0.
