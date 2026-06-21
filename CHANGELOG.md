@@ -3,6 +3,7 @@
 ## 2.6.0
 
 - Pressing Up or Down while the alarm is ringing now Restarts or Delete&Exits the app, rather than just clearing the alarm.
+- New config options for power saving (defaults to the previous hardcoded values). Can force always-seconds-updates.
 
 ## 2.5.0
 

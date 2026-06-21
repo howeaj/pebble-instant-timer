@@ -44,8 +44,14 @@
     MACRO(ENUM,  TouchTimerSetMethod, touchTimerSetMethod,          TouchTimerSetMethod_MinuteWindup) \
     MACRO(BOOL,  bool,                touchDisableWhileInactive,    false) \
     MACRO(INT,   int32_t,             touchLiftMinDurationMs,       100) /*minimum duration for lifts to register setting hours*/\
+    MACRO(INT,   int8_t,              backlightDurationS,           3) \
+    MACRO(INT,   int8_t,              shortAlarmMinutes,            3) \
+    MACRO(INT,   int8_t,              shortStopwatchMinutes,        1) \
 /* end of X_CONFIG_OPTIONS */
 
+
+// The maximum value of shortAlarmMinutes and shortStopwatchMinutes, in config.json
+#define MAX_POWER_SAVING_THRESHOLD (16)
 
 // The meaning of the inner/outer ring for the initial touch
 typedef enum TouchZoneAssignment {

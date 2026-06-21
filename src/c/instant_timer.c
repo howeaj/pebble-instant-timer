@@ -1,12 +1,13 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
-    - Fix show-seconds-on-backlight not activating on touch
-    - Enable touch on... touch?
+    - Fix show-seconds-on-backlight not activating on touch; use new backlight event
+    - Sync per-minute updates to Duration minutes instead of system clock
+    - Allow more than 12 hours touch alarm setting, and/or make AM/PM clearer
+    - Enable touch on system touch-to-wake event?
     - Config down-from-zero wrap values
-    - Config battery saving timeouts / thresholds / services
+    - Config events treated as activity
     - Long press on rightmost X to save & exit, if its faster than back-long-press?
-        - and config option to always exit all the way to watchface
     - some kind of tutorial or help mode?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
     - insert timeline pin
@@ -872,6 +873,7 @@ static void update_rate_timer_callback(void* data) {
 static void schedule_tick_subscription_update(uint32_t timeout_ms, TimeUnits update_rate) {
     static TimeUnits scheduled_update_rate = 0;
     if (timeout_ms == 0) {
+        LOG("Scheduled update rate -> never");
         if (s_tick_reschedule_timer != NULL) {
             app_timer_cancel(s_tick_reschedule_timer);
             s_tick_reschedule_timer = NULL;
@@ -906,9 +908,7 @@ static void schedule_tick_subscription_update(uint32_t timeout_ms, TimeUnits upd
 */
 static void update_tick_subscription(TimeUnits new_update_rate) {
     TRACE("update_tick_subscription");
-    #define HIGH_RATE_TIMEOUT_MS (DEFAULT_BACKLIGHT_TIMEOUT_MS + LIGHT_FADE_TIME_MS)
-    #define SHORT_ALARM_S (3 * SECONDS_PER_MINUTE)
-    #define SHORT_STOPWATCH_S (60)
+    const Config* config = config_get();
 
     const bool is_timer_enabled = (s_state.alarm_duration > 0);
     // Time until the elapsed time is close to a multiple of the alarm duration
@@ -917,7 +917,8 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
         is_timer_enabled ? (s_state.alarm_duration - (s_state.elapsed_time % s_state.alarm_duration))
         : 0  // note: this condition avoids % 0
     );
-    const bool is_short_timer = is_timer_enabled && (time_to_next_alarm <= SHORT_ALARM_S);
+    const int32_t short_alarm_s = config->shortAlarmMinutes * SECONDS_PER_MINUTE;
+    const bool is_short_timer = is_timer_enabled && (time_to_next_alarm <= short_alarm_s);
 
     // Override the new update rate in some circumstances
     if (!s_state.is_counting) {
@@ -950,31 +951,34 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
     } else {  // is_counting
         if (new_update_rate == SECOND_UNIT) {
             // decide when to drop back to minutes
-            if (is_short_timer) {
+            if ((!is_timer_enabled && (config->shortStopwatchMinutes == MAX_POWER_SAVING_THRESHOLD))
+                || (is_timer_enabled && (config->shortAlarmMinutes == MAX_POWER_SAVING_THRESHOLD))) {
+                schedule_tick_subscription_update(0, 0);  // unschedule; never drop back to minutes
+            } else if (is_short_timer) {
                 // back to minutes when the timer expires
                 // (note actually, the "alarm_is_pulsing" condition will then kick in to stay on seconds)
                 schedule_tick_subscription_update(time_to_next_alarm * MS_PER_S, MINUTE_UNIT);
             } else {  // !is_short_timer
-                uint32_t high_rate_timeout_ms;
-                const bool is_short_stopwatch = !is_timer_enabled && (s_state.elapsed_time < SHORT_STOPWATCH_S);
+                int32_t high_rate_timeout_ms = (config->backlightDurationS * MS_PER_S) + LIGHT_FADE_TIME_MS;
+                const int32_t short_stopwatch_s = config->shortStopwatchMinutes * SECONDS_PER_MINUTE;
+                const bool is_short_stopwatch = !is_timer_enabled && (s_state.elapsed_time < short_stopwatch_s);
                 if (is_short_stopwatch) {
                     // back to minutes when the stopwatch gets high enough
-                    high_rate_timeout_ms = (uint32_t) MAX(HIGH_RATE_TIMEOUT_MS,
-                                                          ((int32_t)SHORT_STOPWATCH_S - (int32_t)s_state.elapsed_time) * MS_PER_S);
+                    high_rate_timeout_ms = (uint32_t) MAX(high_rate_timeout_ms,
+                                                          ((int32_t)short_stopwatch_s - (int32_t)s_state.elapsed_time) * MS_PER_S);
                 } else if (alarm_is_pulsing()){
                     // back to minutes when the alarm pulses expire automatically
-                    high_rate_timeout_ms = (uint32_t) MAX(HIGH_RATE_TIMEOUT_MS,
+                    high_rate_timeout_ms = (uint32_t) MAX(high_rate_timeout_ms,
                                                           ABSDIFF(alarm_get_pulse_end_time(), time(NULL)) * MS_PER_S);
                 } else {
-                    // back to minutes when the backlight turns off
-                    high_rate_timeout_ms = HIGH_RATE_TIMEOUT_MS;
+                    // back to minutes after config->backlightDurationS
                 }
                 schedule_tick_subscription_update(high_rate_timeout_ms, MINUTE_UNIT);
             }
         } else if (new_update_rate == MINUTE_UNIT) {
             if (is_timer_enabled) {
                 // set the timer to go back to seconds when the is_short_timer condition will become true
-                schedule_tick_subscription_update((time_to_next_alarm + 1 - SHORT_ALARM_S) * MS_PER_S, SECOND_UNIT);
+                schedule_tick_subscription_update((time_to_next_alarm + 1 - short_alarm_s) * MS_PER_S, SECOND_UNIT);
             } else {
                 // stay on minutes indefinitely; back to seconds only on user activity
                 schedule_tick_subscription_update(0, 0);
@@ -1335,6 +1339,8 @@ static void new_config_handler(const Config* config) {
 #if PBL_TOUCH
     touch_enable(config->enableTouch);
 #endif // PBL_TOUCH
+
+    update_tick_subscription(SECOND_UNIT);
 
     layer_mark_dirty(window_get_root_layer(s_main_window));
 }

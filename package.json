@@ -46,7 +46,10 @@
       "alarmVibePattern",
       "touchTimerSetMethod",
       "touchDisableWhileInactive",
-      "touchLiftMinDurationMs"
+      "touchLiftMinDurationMs",
+      "backlightDurationS",
+      "shortAlarmMinutes",
+      "shortStopwatchMinutes"
     ],
     "resources": {
       "media": [

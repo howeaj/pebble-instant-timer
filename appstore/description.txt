@@ -16,6 +16,7 @@ Other features:
     - Configuration:
         - Full colour customisation & Themes
         - Vibe patterns
+        - Battery saving
         - Various touch options
     - Battery saving:
         - Auto switch between seconds/minutes update rate, synced with backlight and/or remaining time

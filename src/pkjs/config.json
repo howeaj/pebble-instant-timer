@@ -96,6 +96,26 @@
   },
   { "type": "section",
     "items": [
+      { "type": "heading", "defaultValue": "Power saving" },
+      { "type": "slider", "messageKey": "backlightDurationS", "label": "Active duration (seconds)",
+        "description": "How long to display seconds updates after activity is detected. Recommended: set this equal to your backlight duration.",
+        "defaultValue": 3,
+        "min": 0, "max": 10, "step": 1
+      },
+      { "type": "slider", "messageKey": "shortAlarmMinutes", "label": "Timer threshold (minutes)",
+        "description": "Stay on seconds-updates when the remaining timer duration is below this value. Set 16 to always show seconds in timer mode, or 0 to never.",
+        "defaultValue": 3,
+        "min": 0, "max": 16, "step": 1
+      },
+      { "type": "slider", "messageKey": "shortStopwatchMinutes", "label": "Stopwatch threshold (minutes)",
+        "description": "Stay on seconds-updates when the elapsed stopwatch duration is below this value. Set 16 to always show seconds in stopwatch mode, or 0 to never.",
+        "defaultValue": 1,
+        "min": 0, "max": 16, "step": 1
+      }
+    ]
+  },
+  { "type": "section",
+    "items": [
       { "type": "heading", "defaultValue": "Touch",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"]
       },
