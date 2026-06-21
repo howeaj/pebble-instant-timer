@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.1
+
+- Sync per-minute updates to timer/stopwatch minutes instead of wallclock minutes.
+
 ## 2.6.0
 
 - Pressing Up or Down while the alarm is ringing now Restarts or Delete&Exits the app, rather than just clearing the alarm.

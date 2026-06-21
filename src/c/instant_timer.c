@@ -2,7 +2,6 @@
 
 /* TODO
     - Fix show-seconds-on-backlight not activating on touch; use new backlight event
-    - Sync per-minute updates to Duration minutes instead of system clock
     - Allow more than 12 hours touch alarm setting, and/or make AM/PM clearer
     - Enable touch on system touch-to-wake event?
     - Config down-from-zero wrap values
@@ -837,6 +836,10 @@ static void do_exit(bool save) {
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+    // Note this function gets called with NULL by minute_tick_timer_callback
+    UNUSED(tick_time);
+    UNUSED(units_changed);
+
     // TRACE("tick_handler");
     if (s_state.is_counting) {
         stopwatch_tick();
@@ -895,6 +898,39 @@ static void schedule_tick_subscription_update(uint32_t timeout_ms, TimeUnits upd
     scheduled_update_rate = update_rate;
 }
 
+// Recurring timer to trigger tick_handler() on every minute of elapsed/remaining time instead of clock time.
+static AppTimer* s_minute_tick_timer = NULL;
+static void minute_tick_timer_subscribe(bool subscribe);
+static void minute_tick_timer_callback(void* context) {
+    UNUSED(context);
+    s_minute_tick_timer = NULL;
+    tick_handler(NULL, MINUTE_UNIT);
+    minute_tick_timer_subscribe(true);
+}
+static void minute_tick_timer_subscribe(bool subscribe) {
+    if (s_minute_tick_timer != NULL) {
+        app_timer_cancel(s_minute_tick_timer);
+        s_minute_tick_timer = NULL;
+    }
+    if (subscribe) {
+        bool is_counting_up = true;
+        time_t now;
+        if (s_state.alarm_duration > 0) {
+            now = (s_state.alarm_duration - s_state.elapsed_time);
+            is_counting_up = now < 0;
+        } else {
+            now = s_state.elapsed_time;
+        }
+        const uint32_t seconds_to_next_min = (
+            is_counting_up
+            ? (SECONDS_PER_MINUTE - ABS(now % SECONDS_PER_MINUTE))
+            : ((now % SECONDS_PER_MINUTE) + 1)
+        );
+        TRACE("minute_tick_timer_subscribe %ds", seconds_to_next_min);
+        s_minute_tick_timer = app_timer_register(seconds_to_next_min * MS_PER_S, minute_tick_timer_callback, NULL);
+    }
+}
+
 /** Control the state update rate.
     To save power, update as little as possible.
 
@@ -939,7 +975,13 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
     // set the new update rate
     if (s_update_rate != new_update_rate) {
         s_update_rate = new_update_rate;
-        tick_timer_service_subscribe(new_update_rate, tick_handler);
+        if (new_update_rate == MINUTE_UNIT) {
+            minute_tick_timer_subscribe(true);
+            tick_timer_service_unsubscribe();
+        } else {
+            minute_tick_timer_subscribe(false);
+            tick_timer_service_subscribe(new_update_rate, tick_handler);
+        }
         tick_handler(NULL, 0);  // update to new layout
         LOG("Update rate changed to %d", new_update_rate);
     }
