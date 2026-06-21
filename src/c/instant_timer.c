@@ -1017,12 +1017,12 @@ static void update_tick_subscription(TimeUnits new_update_rate) {
                 schedule_tick_subscription_update(high_rate_timeout_ms, MINUTE_UNIT);
             }
         } else if (new_update_rate == MINUTE_UNIT) {
-            if (is_timer_enabled) {
-                // set the timer to go back to seconds when the is_short_timer condition will become true
-                schedule_tick_subscription_update((time_to_next_alarm + 1 - short_alarm_s) * MS_PER_S, SECOND_UNIT);
-            } else {
+            if (!is_timer_enabled || ((config->shortAlarmMinutes == 0) && (s_state.alarm_duration < s_state.elapsed_time))) {
                 // stay on minutes indefinitely; back to seconds only on user activity
                 schedule_tick_subscription_update(0, 0);
+            } else {
+                // set the timer to go back to seconds when the is_short_timer condition will become true
+                schedule_tick_subscription_update((time_to_next_alarm + 1 - short_alarm_s) * MS_PER_S, SECOND_UNIT);
             }
         } else {
             // the only other new_update_rate is MONTH_UNIT, which only happens when !is_counting

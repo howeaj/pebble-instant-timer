@@ -3,6 +3,7 @@
 ## 2.6.1
 
 - Sync per-minute updates to timer/stopwatch minutes instead of wallclock minutes.
+- Fix seconds still being shown on each timer loop when timer threshold is 0.
 
 ## 2.6.0
 
