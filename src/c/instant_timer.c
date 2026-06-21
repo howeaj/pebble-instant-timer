@@ -536,21 +536,20 @@ static void update_action_bar(void) {
     }
 }
 
-// Toggle visibility of the action bar
-static void toggle_action_bar(bool visible) {
-    static bool was_visible = true;
-    if (visible != was_visible){
-        if (visible) {
-            update_action_bar();
-        } else {
+static void show_alarm_dismiss_icons(bool alarm_is_ringing) {
+    static bool was_ringing = false;
+    if (alarm_is_ringing != was_ringing){
+        if (alarm_is_ringing) {
             action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_refresh, true);
             action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, s_icon_tick, true);
             action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_delete, true);
             action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
             action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveLeft);
             action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
+        } else {  // restore mode icons
+            update_action_bar();
         }
-        was_visible = visible;
+        was_ringing = alarm_is_ringing;
     }
 }
 
@@ -818,7 +817,7 @@ static void do_increment(bool add, ClickRecognizerRef recognizer) {
 static bool do_alarm_clear(void) {
     const bool cleared = alarm_clear();
     if (cleared) {
-        toggle_action_bar(true);
+        show_alarm_dismiss_icons(false);
         update_status_icon();
     }
     return cleared;
@@ -846,7 +845,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
             alarm_start();
             update_status_icon();
         }
-        toggle_action_bar(!alarm_is_pulsing());
+        show_alarm_dismiss_icons(alarm_is_pulsing());
     } else {
         update_alarm_time();
     }
