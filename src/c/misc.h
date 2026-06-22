@@ -7,10 +7,6 @@
 
 #define MAX_TIME_TEXT_SIZE (50)
 
-// The system timeout for the backlight after activity, from prefs.h
-// Note this can be changed by the user in system settings
-#define DEFAULT_BACKLIGHT_TIMEOUT_MS (3000)
-
 // Is the backlight service available
 #define PBL_BACKLIGHT_SERVICE (!(PBL_PLATFORM_APLITE || PBL_PLATFORM_BASALT \
                                  || PBL_PLATFORM_CHALK || PBL_PLATFORM_DIORITE))

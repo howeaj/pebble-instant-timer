@@ -15,8 +15,10 @@
 #include "macros.h"
 #include "misc.h"
 
+// How long to keep the touchscreen on for config->touchDisableWhileInactive
+#define TOUCH_ENABLED_DURATION_MS (3000)  // note this 3s value is mentioned in config.json
 
-// the threshold between inner and outer ring
+// The threshold between inner and outer ring
 #define THRESHOLD_RADIUS ((PBL_DISPLAY_WIDTH * 2) / 7)
 
 
@@ -563,7 +565,7 @@ static void timeout_enable_callback(void* context) {
     touch_enable(false);
 }
 static void schedule_touch_disable(void) {
-    const uint32_t timeout_ms = DEFAULT_BACKLIGHT_TIMEOUT_MS;
+    const uint32_t timeout_ms = TOUCH_ENABLED_DURATION_MS;
     if (s_touch_disable_timer == NULL) {
         s_touch_disable_timer = app_timer_register(timeout_ms, timeout_enable_callback, NULL);
         ASSERT(s_touch_disable_timer != NULL);

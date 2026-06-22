@@ -124,7 +124,7 @@
         "defaultValue": true
       },
       { "type": "toggle", "messageKey": "touchDisableWhileInactive", "label": "Turn off touchscreen while inactive",
-        "description": "Only turn on the touchscreen for 3s after a button press or accel tap/shake (i.e. when backlight is on / seconds shown)",
+        "description": "Only turn on the touchscreen for 3s after a button press or accel tap/shake.",
         "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE", "NOT_PLATFORM_FLINT"],
         "group": "touch",
         "defaultValue": false
