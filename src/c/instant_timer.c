@@ -1,7 +1,6 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
-    - Fix show-seconds-on-backlight not activating on touch; use new backlight event
     - Allow more than 12 hours touch alarm setting, and/or make AM/PM clearer
     - Enable touch on system touch-to-wake event?
     - Config down-from-zero wrap values
@@ -20,7 +19,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define DEBUG 0  // TODO disable for release
+#define DEBUG (0 || PBL_DEBUG)
 #define FORCE_BACKLIGHT_ON 0
 #if FORCE_BACKLIGHT_ON
     #define DEMO_BACKLIGHT_ENABLE(on) light_enable(on)
@@ -1102,6 +1101,18 @@ static void enable_touch(void) {
 
 #endif  // !PBL_TOUCH
 
+#if PBL_BACKLIGHT_SERVICE
+// Subscribing to the backlight handler mops up any other activity events
+// (e.g. touch-to-wake) that we can't subscribe to directly.
+// We can't rely on backlight alone because it might be set to always-off or always-on.
+static void backlight_handler(bool on){
+    if (on) {
+        TRACE("backlight_handler on");
+        update_tick_subscription(SECOND_UNIT);
+    }
+}
+#endif // PBL_BACKLIGHT_SERVICE
+
 static void battery_state_handler(BatteryChargeState charge) {
     TRACE("battery_state_handler");
     static bool was_plugged = false;
@@ -1579,6 +1590,9 @@ static void main_window_load(Window *window) {
     update_tick_subscription(SECOND_UNIT);
     accel_tap_service_subscribe(accel_tap_handler);
     battery_state_service_subscribe(battery_state_handler);
+#if PBL_BACKLIGHT_SERVICE
+    backlight_service_subscribe(backlight_handler);
+#endif // PBL_BACKLIGHT_SERVICE
 
     new_config_handler(config_get());
 
@@ -1639,6 +1653,9 @@ static void main_window_unload(Window *window) {
     tick_timer_service_unsubscribe();
     accel_tap_service_unsubscribe();
     battery_state_service_unsubscribe();
+#if PBL_BACKLIGHT_SERVICE
+    backlight_service_unsubscribe();
+#endif // PBL_BACKLIGHT_SERVICE
 
     // business logic
     if (!alarm_clear() && s_save){

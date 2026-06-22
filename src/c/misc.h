@@ -11,6 +11,10 @@
 // Note this can be changed by the user in system settings
 #define DEFAULT_BACKLIGHT_TIMEOUT_MS (3000)
 
+// Is the backlight service available
+#define PBL_BACKLIGHT_SERVICE (!(PBL_PLATFORM_APLITE || PBL_PLATFORM_BASALT \
+                                 || PBL_PLATFORM_CHALK || PBL_PLATFORM_DIORITE))
+
 
 uint32_t timestamp_ms(void);
 void graphics_color_circle(GContext* ctx, GPoint p, uint16_t radius, GColor color);

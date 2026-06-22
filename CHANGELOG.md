@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.2
+
+- Fix touch-to-wake not enabling seconds display; all "backlight on" events now show seconds.
+
 ## 2.6.1
 
 - Sync per-minute updates to timer/stopwatch minutes instead of wallclock minutes.
