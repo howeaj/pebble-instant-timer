@@ -1,7 +1,7 @@
 {
   "name": "Instant Timer",
   "author": "howeaj",
-  "version": "2.6.2",
+  "version": "2.6.3",
   "keywords": [
     "pebble-app"
   ],
@@ -15,8 +15,8 @@
     "sdkVersion": "3",
     "enableMultiJS": true,
     "targetPlatforms": [
-      "aplite",
       "basalt",
+      "aplite",
       "chalk",
       "diorite",
       "emery",

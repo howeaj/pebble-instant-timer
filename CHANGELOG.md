@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.6.3
+
+- Fix app glance in launcher (workaround for suspected mobile app installer bug)
+
 ## 2.6.2
 
 - Fix touch-to-wake not enabling seconds display; all "backlight on" events now show seconds.
