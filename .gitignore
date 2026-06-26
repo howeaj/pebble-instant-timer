@@ -1,6 +1,7 @@
 *.svg
 *.xcf
 .lock-waf_linux_build
+.lock-waf_darwin_build
 /build
 /node_modules
 /resources/images/unused
