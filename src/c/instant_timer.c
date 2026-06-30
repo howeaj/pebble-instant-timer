@@ -1304,6 +1304,17 @@ static void render_background(Layer *layer, GContext *ctx) {
         );
     }
 
+#if PBL_ROUND
+    // Draw the custom rounded background for the StatusBar
+    const uint16_t status_bg_radius = bounds.size.h; // could go a little larger, to taste
+    const GPoint status_bg_point = GPoint(
+        bounds.size.w / 2,
+        -status_bg_radius + STATUS_BAR_LAYER_HEIGHT
+    );
+
+    graphics_color_circle(ctx, status_bg_point, status_bg_radius, config->statusBarBgColor);
+#endif // PBL_ROUND
+
 #if PBL_RECT
     // central panel is an extra graphics_fill_rect, rather than the missing centre of graphics_fill_radial
     graphics_context_set_fill_color(ctx, config->bgColor);
@@ -1387,6 +1398,11 @@ static void new_config_handler(const Config* config) {
     action_bar_layer_set_background_color(s_action_bar, config->actionBarBgColor);
 #endif // PBL_RECT
     status_bar_layer_set_colors(s_status_bar, config->statusBarBgColor, config->statusBarTextColor);
+    status_bar_layer_set_colors(s_status_bar, config->statusBarBgColor, config->statusBarTextColor);
+
+    // We draw the StatusBar's background manually on round displays
+    GColor status_bar_bg_color = PBL_IF_ROUND_ELSE(GColorClear, config->statusBarBgColor);
+    status_bar_layer_set_colors(s_status_bar, status_bar_bg_color, config->statusBarTextColor);
 
 #if PBL_TOUCH
     touch_enable(config->enableTouch);
