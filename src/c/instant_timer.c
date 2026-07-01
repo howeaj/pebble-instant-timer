@@ -1357,21 +1357,33 @@ static void set_text_colors(const Config* config) {
 }
 
 static void set_bitmap_colors(const Config* config) {
-    // All my bitmaps' palettes are {0: Clear, 1: White}
-    // This seems to be because they are white; if black, they are {0: Black, 1: Clear}
-    const size_t color_index = 1;
+    
+    // Actionbar icon palettes are white fill with black outline {0: Black, 1-2: Clear, 3: White}
+    const size_t action_fill_index = 3;
+    const size_t action_line_index = 0;
+    const GColor action_fill_color = config->actionBarIconColor;
+    gbitmap_set_color(s_icon_refresh, action_fill_index, action_fill_color);
+    gbitmap_set_color(s_icon_pause,   action_fill_index, action_fill_color);
+    gbitmap_set_color(s_icon_start,   action_fill_index, action_fill_color);
+    gbitmap_set_color(s_icon_delete,  action_fill_index, action_fill_color);
+    gbitmap_set_color(s_icon_save,    action_fill_index, action_fill_color);
+    gbitmap_set_color(s_icon_right,   action_fill_index, action_fill_color);
+    gbitmap_set_color(s_icon_up,      action_fill_index, action_fill_color);
+    gbitmap_set_color(s_icon_down,    action_fill_index, action_fill_color);
+    gbitmap_set_color(s_icon_tick,    action_fill_index, action_fill_color);
+    const GColor action_line_color = config->actionBarBgColor;
+    gbitmap_set_color(s_icon_refresh, action_line_index, action_line_color);
+    gbitmap_set_color(s_icon_pause,   action_line_index, action_line_color);
+    gbitmap_set_color(s_icon_start,   action_line_index, action_line_color);
+    gbitmap_set_color(s_icon_delete,  action_line_index, action_line_color);
+    gbitmap_set_color(s_icon_save,    action_line_index, action_line_color);
+    gbitmap_set_color(s_icon_right,   action_line_index, action_line_color);
+    gbitmap_set_color(s_icon_up,      action_line_index, action_line_color);
+    gbitmap_set_color(s_icon_down,    action_line_index, action_line_color);
+    gbitmap_set_color(s_icon_tick,    action_line_index, action_line_color);
 
-    // action bar
-    const GColor action_icon_color = config->actionBarIconColor;
-    gbitmap_set_color(s_icon_refresh, color_index, action_icon_color);
-    gbitmap_set_color(s_icon_pause,   color_index, action_icon_color);
-    gbitmap_set_color(s_icon_start,   color_index, action_icon_color);
-    gbitmap_set_color(s_icon_delete,  color_index, action_icon_color);
-    gbitmap_set_color(s_icon_save,    color_index, action_icon_color);
-    gbitmap_set_color(s_icon_right,   color_index, action_icon_color);
-    gbitmap_set_color(s_icon_up,      color_index, action_icon_color);
-    gbitmap_set_color(s_icon_down,    color_index, action_icon_color);
-    gbitmap_set_color(s_icon_tick,    color_index, action_icon_color);
+    // Other bitmaps' palettes are {0: Clear, 1: White}
+    const size_t color_index = 1;
 
     // status
     const GColor text_color = config->textColor;
