@@ -1248,6 +1248,17 @@ static void draw_pause_background(GPoint centre, int16_t central_panel_radius, G
 }
 #endif // PBL_COLOR
 
+#if PBL_ROUND
+// Draw a custom rounded StatusBar background
+static void draw_round_status_bar(GRect bounds, GContext *ctx) {
+    const uint16_t status_bg_radius = bounds.size.h;
+    const GPoint status_bg_point = GPoint(
+        bounds.size.w / 2,
+        -status_bg_radius + STATUS_BAR_LAYER_HEIGHT
+    );
+    graphics_color_circle(ctx, status_bg_point, status_bg_radius, config_get()->statusBarBgColor);
+}
+#endif // PBL_ROUND
 
 // Render background elements, including the progress ring
 static void render_background(Layer *layer, GContext *ctx) {
@@ -1305,13 +1316,7 @@ static void render_background(Layer *layer, GContext *ctx) {
     }
 
 #if PBL_ROUND
-    // Draw a custom rounded StatusBar background
-    const uint16_t status_bg_radius = bounds.size.h;
-    const GPoint status_bg_point = GPoint(
-        bounds.size.w / 2,
-        -status_bg_radius + STATUS_BAR_LAYER_HEIGHT
-    );
-    graphics_color_circle(ctx, status_bg_point, status_bg_radius, config->statusBarBgColor);
+    draw_round_status_bar(bounds, ctx);
 #endif // PBL_ROUND
 
 #if PBL_RECT
