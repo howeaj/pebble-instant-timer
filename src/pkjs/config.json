@@ -36,12 +36,20 @@
           {"label": "Custom", "value": "Custom" }
         ]
       },
+      { "type": "toggle", "messageKey": "roundIconOutline", "label": "Outline action bar icons",
+        "defaultValue": true,
+        "capabilities": ["ROUND"]
+      },
       { "type": "color", "messageKey": "bgColor", "label": "Background - Main panel",
         "defaultValue": "000000"
       },
       { "type": "color", "messageKey": "actionBarBgColor", "label": "Background - Action bar",
         "defaultValue": "000000",
         "capabilities": ["RECT"]
+      },
+      { "type": "color", "messageKey": "actionBarBgColor", "label": "Outline - Action bar",
+        "defaultValue": "000000",
+        "capabilities": ["ROUND"]
       },
       { "type": "color", "messageKey": "statusBarBgColor", "label": "Background - Status bar",
         "defaultValue": "000000"
@@ -50,7 +58,12 @@
         "defaultValue": "ffffff"
       },
       { "type": "color", "messageKey": "actionBarIconColor", "label": "Foreground - Action bar",
-        "defaultValue": "ffffff"
+        "defaultValue": "ffffff",
+        "capabilities": ["RECT"]
+      },
+      { "type": "color", "messageKey": "actionBarIconColor", "label": "Icon fill - Action bar",
+        "defaultValue": "ffffff",
+        "capabilities": ["ROUND"]
       },
       { "type": "color", "messageKey": "statusBarTextColor", "label": "Foreground - Status bar",
         "defaultValue": "ffffff"

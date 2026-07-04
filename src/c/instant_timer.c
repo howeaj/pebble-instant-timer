@@ -1,12 +1,12 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
+    - Alarm audio (casio beep)
     - Allow more than 12 hours touch alarm setting, and/or make AM/PM clearer
     - Enable touch on system touch-to-wake event?
     - Config down-from-zero wrap values
     - Config events treated as activity
     - Long press on rightmost X to save & exit, if its faster than back-long-press?
-    - some kind of tutorial or help mode?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
     - insert timeline pin
         - "PKJS when running on the new Core app can just do Pebble.insertTimelinePin"
@@ -1357,7 +1357,7 @@ static void set_text_colors(const Config* config) {
 }
 
 static void set_bitmap_colors(const Config* config) {
-    
+
     // Actionbar icon palettes are white fill with black outline {0: Black, 1-2: Clear, 3: White}
     const size_t action_fill_index = 3;
     const size_t action_line_index = 0;
@@ -1371,7 +1371,7 @@ static void set_bitmap_colors(const Config* config) {
     gbitmap_set_color(s_icon_up,      action_fill_index, action_fill_color);
     gbitmap_set_color(s_icon_down,    action_fill_index, action_fill_color);
     gbitmap_set_color(s_icon_tick,    action_fill_index, action_fill_color);
-    const GColor action_line_color = config->actionBarBgColor;
+    const GColor action_line_color = config->roundIconOutline ? config->actionBarBgColor : GColorClear;
     gbitmap_set_color(s_icon_refresh, action_line_index, action_line_color);
     gbitmap_set_color(s_icon_pause,   action_line_index, action_line_color);
     gbitmap_set_color(s_icon_start,   action_line_index, action_line_color);

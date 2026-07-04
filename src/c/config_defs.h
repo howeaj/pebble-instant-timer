@@ -47,6 +47,7 @@
     MACRO(INT,   int8_t,              backlightDurationS,           3) \
     MACRO(INT,   int8_t,              shortAlarmMinutes,            3) \
     MACRO(INT,   int8_t,              shortStopwatchMinutes,        1) \
+    MACRO(BOOL,  bool,                roundIconOutline,             true) \
 /* end of X_CONFIG_OPTIONS */
 
 

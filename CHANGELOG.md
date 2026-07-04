@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.6.4
+
+- Improve display on round devices (thanks to Lavender Glaab):
+  - Rounded status bar
+  - Outlined action bar icons (configurable)
+
 ## 2.6.3
 
 - Fix app glance in launcher (workaround for suspected mobile app installer bug)

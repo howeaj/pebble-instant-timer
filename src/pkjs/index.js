@@ -6,6 +6,13 @@ var clay = new Clay(clayConfig, function(minified) {
     var separateSystemBars = true;  // emery layout is slightly different, with uneven gap to action/status bars
     var round = false;  // round layouts' actionbar icons are on the progress ring
 
+    function setOutline(enable) {
+        var item = clayConfig.getItemByMessageKey("roundIconOutline");
+        if (item) {
+            item.set(enable);
+        }
+    }
+
     function setColor(messageKey, color) {
         var item = clayConfig.getItemByMessageKey(messageKey);
         if (item) {
@@ -46,6 +53,7 @@ var clay = new Clay(clayConfig, function(minified) {
                 setColorById('bw_ringColorRemaining',  0xffffff);
                 setColorById('bw_ringColorOvertime',   0xffffff);
                 setColor('bgColorImage',        0x550000);
+                setOutline(true);
                 break;
             case "Light":
                 setColor('bgColor',             0xffffff);
@@ -61,6 +69,7 @@ var clay = new Clay(clayConfig, function(minified) {
                 setColorById('bw_ringColorRemaining',  0x555555);
                 setColorById('bw_ringColorOvertime',   0x000000);
                 setColor('bgColorImage',        0xff5555);
+                setOutline(false);
                 break;
             case "Green":
                 setColor('bgColor',             0x005500);
@@ -82,6 +91,7 @@ var clay = new Clay(clayConfig, function(minified) {
                 setColor('ringColorRemaining',  0x55ff00);
                 setColor('ringColorOvertime',   0xaa0000);
                 setColor('bgColorImage',        0x550000);
+                setOutline(true);
                 break;
             case "Aqua":
                 setColor('bgColor',             0x55aaff);
@@ -99,6 +109,7 @@ var clay = new Clay(clayConfig, function(minified) {
                 setColor('ringColorRemaining',  0x00ff00);
                 setColor('ringColorOvertime',   0xff00aa);
                 setColor('bgColorImage',        0xaa0055);
+                setOutline(true);
                 break;
             default:
                 break;
