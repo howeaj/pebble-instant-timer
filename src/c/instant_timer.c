@@ -1272,9 +1272,11 @@ static void render_background(Layer *layer, GContext *ctx) {
 #if PBL_PLATFORM_EMERY  // Time2's bezel covers screen edges, so add a margin
     const int32_t margin = 10;
     const GRect ring_bounds = grect_crop(bounds, margin);
-#else // !PBL_PLATFORM_EMERY
+#elif PBL_ROUND  // graphics_fill_radial doesn't necessarily match the screen edge, so draw over the edge
+    const GRect ring_bounds = grect_crop(bounds, -1);
+#else // !PBL_PLATFORM_EMERY && !ROUND
     const GRect ring_bounds = bounds;
-#endif // !PBL_PLATFORM_EMERY
+#endif // !PBL_PLATFORM_EMERY && !ROUND
 
 #if PBL_PLATFORM_CHALK  // make the ring slightly wider to accommodate actionbar icons
     const int16_t central_panel_radius = (bounds.size.h * 0.34);
