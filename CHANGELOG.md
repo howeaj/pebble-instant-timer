@@ -3,6 +3,7 @@
 ## 2.7.0
 
 - Add optional alarm beep audio
+- Add "None" alarm vibration option
 - Improve display on round devices (thanks to Lavender Glaab):
   - Rounded status bar
   - Outlined action bar icons (configurable)

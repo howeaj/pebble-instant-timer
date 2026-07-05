@@ -432,6 +432,9 @@ static void alarm_pulse(void) {
         LOG("ALARM PULSE! - long");
         vibes_long_pulse();
         break;
+    case AlarmVibePattern_None:
+        LOG("ALARM PULSE! - no vibe");
+        break;
     default:
         ASSERT(false);
         vibes_double_pulse();

@@ -73,6 +73,7 @@ typedef enum AlarmVibePattern {
     AlarmVibePattern_Double = 0,
     AlarmVibePattern_Short = 1,
     AlarmVibePattern_Long = 2,
+    AlarmVibePattern_None = 3,
 } AlarmVibePattern;
 
 // How many touches are required when setting the timer duration
