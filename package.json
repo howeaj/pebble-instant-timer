@@ -50,7 +50,8 @@
       "backlightDurationS",
       "shortAlarmMinutes",
       "shortStopwatchMinutes",
-      "roundIconOutline"
+      "roundIconOutline",
+      "audioVolume"
     ],
     "resources": {
       "media": [

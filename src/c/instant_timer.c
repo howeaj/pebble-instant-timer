@@ -1,11 +1,9 @@
 // Copyright (c) 2026 Andrew Howe. All rights reserved. See LICENSE (GPLv3.0).
 
 /* TODO
-    - Alarm audio (casio beep)
     - Allow more than 12 hours touch alarm setting, and/or make AM/PM clearer
     - Enable touch on system touch-to-wake event?
     - Config down-from-zero wrap values
-    - Config events treated as activity
     - Long press on rightmost X to save & exit, if its faster than back-long-press?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
     - insert timeline pin
@@ -389,10 +387,36 @@ static bool alarm_clear(void) {
         app_timer_cancel(s_alarm_pulse_timer);
         s_alarm_pulse_timer = NULL;
         vibes_cancel();
+#if PBL_SPEAKER
+        speaker_stop();
+#endif // PBL_SPEAKER
         s_state.is_alarm_done = true;
     }
     return was_active;
 }
+
+#if PBL_SPEAKER
+static void alarm_play_audio(void) {
+    static const SpeakerNote beep = {
+        .midi_note = 95,  // B6
+        .waveform = SpeakerWaveformSquare,
+        .duration_ms = 150,
+        .velocity = 0
+    };
+    static const SpeakerNote silence = {
+        .midi_note = 0,
+        .waveform = SpeakerWaveformSine,
+        .duration_ms = 100,
+        .velocity = 0,
+    };
+    static const SpeakerNote notes[4] = {beep, silence, beep, silence};
+
+    const uint8_t volume = config_get()->audioVolume;
+    if ((volume > 0) && !speaker_is_muted()) {
+        (void)speaker_play_notes(notes, ARRAY_LENGTH(notes), volume);
+    }
+}
+#endif // PBL_SPEAKER
 
 static void alarm_pulse(void) {
     switch (config_get()->alarmVibePattern) {
@@ -413,6 +437,9 @@ static void alarm_pulse(void) {
         vibes_double_pulse();
         break;
     }
+#if PBL_SPEAKER
+    alarm_play_audio();
+#endif // PBL_SPEAKER
 }
 
 static bool alarm_is_pulsing(void) {

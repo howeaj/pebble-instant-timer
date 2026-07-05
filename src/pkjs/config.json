@@ -2,14 +2,19 @@
   { "type": "heading", "defaultValue": "Instant Timer config" },
   { "type": "section",
     "items": [
-      { "type": "heading", "defaultValue": "Vibes" },
-      { "type": "select", "messageKey": "alarmVibePattern", "label": "Alarm vibe pattern",
+      { "type": "heading", "defaultValue": "Alarm signal" },
+      { "type": "select", "messageKey": "alarmVibePattern", "label": "Vibration pattern",
         "defaultValue": "0",
         "options": [
           {"label": "Double", "value": "0" },
           {"label": "Short", "value": "1" },
           {"label": "Long", "value": "2" }
         ]
+      },
+      { "type": "slider", "messageKey": "audioVolume", "label": "Beep volume (0 to disable)",
+        "capabilities": ["NOT_PLATFORM_APLITE", "NOT_PLATFORM_BASALT", "NOT_PLATFORM_CHALK", "NOT_PLATFORM_DIORITE"],
+        "defaultValue": 0,
+        "min": 0, "max": 100, "step": 1
       }
     ]
   },

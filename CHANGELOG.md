@@ -1,7 +1,8 @@
 # Changelog
 
-## 2.6.4
+## 2.7.0
 
+- Add optional alarm beep audio
 - Improve display on round devices (thanks to Lavender Glaab):
   - Rounded status bar
   - Outlined action bar icons (configurable)

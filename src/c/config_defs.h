@@ -48,6 +48,7 @@
     MACRO(INT,   int8_t,              shortAlarmMinutes,            3) \
     MACRO(INT,   int8_t,              shortStopwatchMinutes,        1) \
     MACRO(BOOL,  bool,                roundIconOutline,             true) \
+    MACRO(INT,   uint8_t,             audioVolume,                  0) \
 /* end of X_CONFIG_OPTIONS */
 
 

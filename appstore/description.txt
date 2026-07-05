@@ -1,4 +1,4 @@
-Stopwatch / Alarm / Timer combo designed for quick launch; everyday cooking, reminders and alarms. Touch controls; set with one swipe! Packed with unique, detailed behaviour to optimise easy frequent use.
+Stopwatch / Alarm / Timer combo designed for quick launch; everyday cooking, reminders and alarms. Touch controls; set with one swipe! Optional audio. Packed with unique, detailed behaviour to optimise easy frequent use.
 
 Optional touch controls (PT2/PR2): Set with just one or two swipes!
     - Timer: touch, hold and drag to select minutes; circle clockwise to wind-up hours, or anticlockwise for seconds
@@ -14,6 +14,7 @@ This app does 3 things I couldn't find anywhere else:
 Other features:
     - Timer modification controls optimised for speed (1h, 5m, 1m increments)
     - Configuration:
+        - Alarm audio; beep sound volume
         - Full colour customisation & Themes
         - Vibe patterns
         - Battery saving
