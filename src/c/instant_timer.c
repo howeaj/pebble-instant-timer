@@ -540,7 +540,14 @@ static SecDisplay seconds_duration_display_style(void) {
 static void update_action_bar(void) {
     TRACE("update_action_bar");
     const GBitmap* icon_toggle = s_state.is_counting ? s_icon_pause : s_icon_start;
-    if (s_mode == MODE_CTRL) {
+    if (alarm_is_pulsing()) {
+        action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_refresh, true);
+        action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, s_icon_tick, true);
+        action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_delete, true);
+        action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
+        action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveLeft);
+        action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
+    } else if (s_mode == MODE_CTRL) {
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_refresh, true);
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, icon_toggle, true);
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_save, true);
@@ -564,23 +571,6 @@ static void update_action_bar(void) {
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveDown);
     }
     action_bar_layer_set_click_config_provider(s_action_bar, click_config_provider);
-}
-
-static void show_alarm_dismiss_icons(bool alarm_is_ringing) {
-    static bool was_ringing = false;
-    if (alarm_is_ringing != was_ringing){
-        if (alarm_is_ringing) {
-            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_refresh, true);
-            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, s_icon_tick, true);
-            action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_delete, true);
-            action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
-            action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveLeft);
-            action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
-        } else {  // restore mode icons
-            update_action_bar();
-        }
-        was_ringing = alarm_is_ringing;
-    }
 }
 
 // Update the primary large text and the secondary text below it
@@ -847,7 +837,7 @@ static void do_increment(bool add, ClickRecognizerRef recognizer) {
 static bool do_alarm_clear(void) {
     const bool cleared = alarm_clear();
     if (cleared) {
-        show_alarm_dismiss_icons(false);
+        update_action_bar();
         update_status_icon();
     }
     return cleared;
@@ -877,9 +867,9 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
         update_elapsed();
         if (alarm_should_start()) {
             alarm_start();
+            update_action_bar();
             update_status_icon();
         }
-        show_alarm_dismiss_icons(alarm_is_pulsing());
     } else {
         update_alarm_time();
     }
@@ -1665,12 +1655,12 @@ static void main_window_load(Window *window) {
         stopwatch_clear();
     }
     update_mode();
-    update_action_bar();
     update_alarm_duration();
     update_elapsed();
     if (launch_reason() == APP_LAUNCH_WAKEUP) {
         alarm_start();
     }
+    update_action_bar();
     alarm_cancel_any_wakeup();
 
     // services

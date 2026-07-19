@@ -3,6 +3,7 @@
 ## 2.8.0
 
 - Change the Down button to save on short press, delete on long press.
+- Fix wrong action bar icons shown after touching while alarm is ringing.
 
 ## 2.7.0
 
