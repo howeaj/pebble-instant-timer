@@ -4,7 +4,6 @@
     - Allow more than 12 hours touch alarm setting, and/or make AM/PM clearer
     - Enable touch on system touch-to-wake event?
     - Config down-from-zero wrap values
-    - Long press on rightmost X to save & exit, if its faster than back-long-press?
     - increase big font size on gabbro when FONT_KEY_GOTHIC_36_BOLD is available
     - insert timeline pin
         - "PKJS when running on the new Core app can just do Pebble.insertTimelinePin"
@@ -520,6 +519,8 @@ static void alarm_reset(void) {
  UI updates
 ******************************************************************************/
 
+static void click_config_provider(void *context);
+
 // for elapsed and remaining
 static SecDisplay seconds_elapsed_display_style(void) {
     const bool show = (s_update_rate == SECOND_UNIT) || !s_state.is_counting || s_initialising;
@@ -542,7 +543,7 @@ static void update_action_bar(void) {
     if (s_mode == MODE_CTRL) {
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_UP, s_icon_refresh, true);
         action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_SELECT, icon_toggle, true);
-        action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_delete, true);
+        action_bar_layer_set_icon_animated(s_action_bar, BUTTON_ID_DOWN, s_icon_save, true);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_UP, ActionBarLayerIconPressAnimationMoveLeft);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveLeft);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveLeft);
@@ -562,6 +563,7 @@ static void update_action_bar(void) {
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_SELECT, ActionBarLayerIconPressAnimationMoveRight);
         action_bar_layer_set_icon_press_animation(s_action_bar, BUTTON_ID_DOWN, ActionBarLayerIconPressAnimationMoveDown);
     }
+    action_bar_layer_set_click_config_provider(s_action_bar, click_config_provider);
 }
 
 static void show_alarm_dismiss_icons(bool alarm_is_ringing) {
@@ -1189,13 +1191,30 @@ static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
 
 static void down_click_handler(ClickRecognizerRef recognizer, void *context) {
     TRACE("down_click_handler");
-    if (do_alarm_clear() || (s_mode == MODE_CTRL) || (s_mode == MODE_EXIT)) {
+    ASSERT(s_mode != MODE_CTRL);
+    if (do_alarm_clear() || (s_mode == MODE_EXIT)) {
         do_exit(false);
-    } else {
+    } else if (s_mode != MODE_CTRL) {
         do_increment(false, recognizer);
+    } else {
+        return;
     }
     update_tick_subscription(SECOND_UNIT);
     enable_touch();
+}
+
+static void down_click_handler_ctrl_short(ClickRecognizerRef recognizer, void *context) {
+    ASSERT(s_mode == MODE_CTRL);
+    if (alarm_is_pulsing()) {
+        do_exit(false);
+    } else {
+        do_exit(true);
+    }
+}
+
+static void down_click_handler_ctrl_long(ClickRecognizerRef recognizer, void *context) {
+    ASSERT(s_mode == MODE_CTRL);
+    do_exit(false);
 }
 
 static void select_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -1247,7 +1266,13 @@ static void click_config_provider(void *context) {
     window_long_click_subscribe(BUTTON_ID_SELECT, LONG_CLICK_DURATION, select_long_click_handler, NULL);
     window_single_click_subscribe(BUTTON_ID_BACK, back_click_handler);
     window_single_repeating_click_subscribe(BUTTON_ID_UP, 100, up_click_handler);
-    window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 100, down_click_handler);
+
+    if (s_mode == MODE_CTRL) {
+        window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler_ctrl_short);
+        window_long_click_subscribe(BUTTON_ID_DOWN, LONG_CLICK_DURATION, down_click_handler_ctrl_long, NULL);
+    } else {
+        window_single_repeating_click_subscribe(BUTTON_ID_DOWN, 100, down_click_handler);
+    }
 }
 
 

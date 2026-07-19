@@ -38,11 +38,12 @@ Button controls:
         - Up (rewind icon) to restart the timer (i.e. set elapsed time to 0) while retaining the timer/alarm duration
         - Up Long-press to reset the entire app to 0
         - Select (play/pause icon) to pause/resume counting
-        - Down (X icon) to discard timer/alarm and exit the app
+        - Down (save icon) to save and exit
+        - Down Long-press to discard and exit
         - Back to return to timer modification
     - Back while at the largest digit to exit with options:
         - Up/Back (save icon) to save and exit
-        - Down (X icon) to discard timer/alarm and exit the app
+        - Down (X icon) to discard and exit
         - Select (> icon) to return to timer modification
     - Back Long-press to save and exit
     - Select (✓ icon) or Back to dismiss alarm bell.

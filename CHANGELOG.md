@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.8.0
+
+- Change the Down button to save on short press, delete on long press.
+
 ## 2.7.0
 
 - Add optional alarm beep audio
