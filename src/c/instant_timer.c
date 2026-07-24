@@ -1314,14 +1314,11 @@ static void render_background(Layer *layer, GContext *ctx) {
     graphics_context_set_fill_color(ctx, config->bgColor);
     graphics_fill_rect(ctx, bounds, 0, GCornerNone);
 
-#if PBL_PLATFORM_EMERY  // Time2's bezel covers screen edges, so add a margin
-    const int32_t margin = 10;
-    const GRect ring_bounds = grect_crop(bounds, margin);
-#elif PBL_ROUND  // graphics_fill_radial doesn't necessarily match the screen edge, so draw over the edge
+#if PBL_ROUND  // graphics_fill_radial doesn't necessarily match the screen edge, so draw over the edge
     const GRect ring_bounds = grect_crop(bounds, -1);
-#else // !PBL_PLATFORM_EMERY && !ROUND
+#else // !ROUND
     const GRect ring_bounds = bounds;
-#endif // !PBL_PLATFORM_EMERY && !ROUND
+#endif // !ROUND
 
 #if PBL_PLATFORM_CHALK  // make the ring slightly wider to accommodate actionbar icons
     const int16_t central_panel_radius = (bounds.size.h * 0.34);
@@ -1371,19 +1368,6 @@ static void render_background(Layer *layer, GContext *ctx) {
     graphics_context_set_fill_color(ctx, config->bgColor);
     const GRect central_panel_rect = grect_crop(ring_bounds, ring_thickness);
     graphics_fill_rect(ctx, central_panel_rect, corner_radius, GCornersAll);
-
-#if PBL_PLATFORM_EMERY
-    // clip off the outer edges of the ring foreground to restore the margin
-    // TODO "If a parent layer has clipping enabled, all the children will be clipped to the frame of the parent."
-    graphics_fill_rect(ctx, (GRect){  // top
-        {bounds.origin.x, bounds.origin.y}, {bounds.size.w, margin}}, 0, GCornerNone);
-    graphics_fill_rect(ctx, (GRect){  // left
-        {bounds.origin.x, bounds.origin.y}, {margin, bounds.size.h}}, 0, GCornerNone);
-    graphics_fill_rect(ctx, (GRect){  // bottom
-        {bounds.origin.x, bounds.origin.y + margin + ring_bounds.size.h}, {bounds.size.w, margin}}, 0, GCornerNone);
-    graphics_fill_rect(ctx, (GRect){  // right
-        {bounds.origin.x + margin + ring_bounds.size.w, bounds.origin.y}, {margin, bounds.size.h}}, 0, GCornerNone);
-#endif // PBL_PLATFORM_EMERY
 #endif // PBL_RECT
 
 #if PBL_COLOR
