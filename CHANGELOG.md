@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.8.1
+
+- Fix Gabbro actionbar icon alignment for firmware v4.26.0+
+
 ## 2.8.0
 
 - Change the Down button to save on short press, delete on long press.
